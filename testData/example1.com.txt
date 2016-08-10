@@ -1,0 +1,4 @@
+
+$ORIGIN example1.com.
+$TTL 0
+
