@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/robarchibald/easyDbReader"
+	"github.com/robarchibald/onedb"
 )
 
 func TestNewDb(t *testing.T) {
@@ -14,27 +14,23 @@ func TestNewDb(t *testing.T) {
 	}
 }
 
-type Code struct {
-	Code int
-}
-
 func TestCreateSchema(t *testing.T) {
 	// error on query
-	db := Db{Db: easyDbReader.NewMockDbReader()}
+	db := Db{Db: onedb.NewMockDb()}
 	err := db.CreateSchema()
 	if err == nil {
 		t.Error("expected error due to row query error")
 	}
 
 	// schema exists
-	db = Db{Db: easyDbReader.NewMockDbReader(&Code{1})}
+	db = Db{Db: onedb.NewMockDb(Code{1})}
 	err = db.CreateSchema()
 	if err != nil {
 		t.Error("expected success since schema already exists")
 	}
 
 	// failed execute
-	reader := easyDbReader.NewMockDbReader(&Code{0})
+	reader := onedb.NewMockDb(Code{0})
 	reader.ExecErr = errors.New("fail")
 	db = Db{Db: reader}
 	err = db.CreateSchema()
@@ -43,7 +39,7 @@ func TestCreateSchema(t *testing.T) {
 	}
 
 	// successful create
-	db = Db{Db: easyDbReader.NewMockDbReader(&Code{0})}
+	db = Db{Db: onedb.NewMockDb(Code{0})}
 	err = db.CreateSchema()
 	if err != nil {
 		t.Error("expected success creating schema", err)
@@ -56,34 +52,34 @@ func TestGetDomains(t *testing.T) {
 	nsRecords := []NsRecord{NsRecord{Name: "nsrecord", DomainId: 1}, NsRecord{Name: "nsrecord2", DomainId: 2}}
 	domainRecords := []Domain{Domain{Name: "domain", Id: 1}, Domain{Name: "domain2", Id: 2}}
 	// fail on getARecords
-	db := Db{Db: easyDbReader.NewMockDbReader()}
+	db := Db{Db: onedb.NewMockDb()}
 	_, err := db.GetDomains()
 	if err == nil {
 		t.Error("expected error since there's no data in the Mock reader")
 	}
 
 	// fail on getMxRecords
-	db = Db{Db: easyDbReader.NewMockDbReader(aRecords)}
+	db = Db{Db: onedb.NewMockDb(aRecords)}
 	_, err = db.GetDomains()
 	if err == nil {
 		t.Error("expected error since there's only one dataset in the Mock reader")
 	}
 
 	// fail on getNsRecords
-	db = Db{Db: easyDbReader.NewMockDbReader(aRecords, mxRecords)}
+	db = Db{Db: onedb.NewMockDb(aRecords, mxRecords)}
 	_, err = db.GetDomains()
 	if err == nil {
 		t.Error("expected error since there's only one dataset in the Mock reader")
 	}
 
 	// fail on get domains
-	db = Db{Db: easyDbReader.NewMockDbReader(aRecords, mxRecords, nsRecords)}
+	db = Db{Db: onedb.NewMockDb(aRecords, mxRecords, nsRecords)}
 	_, err = db.GetDomains()
 	if err == nil {
 		t.Error("expected error since there's only one dataset in the Mock reader")
 	}
 
-	db = Db{Db: easyDbReader.NewMockDbReader(aRecords, mxRecords, nsRecords, domainRecords)}
+	db = Db{Db: onedb.NewMockDb(aRecords, mxRecords, nsRecords, domainRecords)}
 	domains, _ := db.GetDomains()
 	if len(domains) != 2 || domains[0].Name != "domain" || domains[1].Name != "domain2" ||
 		len(domains[1].ARecords) != 1 || len(domains[0].ARecords) != 1 || domains[0].ARecords[0].Name != "arecord" || domains[1].ARecords[0].Name != "arecord2" ||
@@ -99,7 +95,7 @@ func TestGetDomains(t *testing.T) {
 }
 
 func TestGetARecords(t *testing.T) {
-	reader := easyDbReader.NewMockDbReader([]ARecord{ARecord{Name: "arecord"}})
+	reader := onedb.NewMockDb([]ARecord{ARecord{Name: "arecord"}})
 	db := Db{Db: reader}
 	aRecords, err := db.getARecords()
 	if err != nil || len(aRecords) != 1 || aRecords[0].Name != "arecord" {
@@ -108,7 +104,7 @@ func TestGetARecords(t *testing.T) {
 }
 
 func TestGetMxRecords(t *testing.T) {
-	reader := easyDbReader.NewMockDbReader([]MxRecord{MxRecord{Name: "mxrecord"}})
+	reader := onedb.NewMockDb([]MxRecord{MxRecord{Name: "mxrecord"}})
 	db := Db{Db: reader}
 	mxRecords, err := db.getMxRecords()
 	if err != nil || len(mxRecords) != 1 || mxRecords[0].Name != "mxrecord" {
@@ -117,7 +113,7 @@ func TestGetMxRecords(t *testing.T) {
 }
 
 func TestGetNsRecords(t *testing.T) {
-	reader := easyDbReader.NewMockDbReader([]NsRecord{NsRecord{Name: "nsrecord"}})
+	reader := onedb.NewMockDb([]NsRecord{NsRecord{Name: "nsrecord"}})
 	db := Db{Db: reader}
 	nsRecords, err := db.getNsRecords()
 	if err != nil || len(nsRecords) != 1 || nsRecords[0].Name != "nsrecord" {

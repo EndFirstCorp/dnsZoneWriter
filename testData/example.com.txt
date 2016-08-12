@@ -2,7 +2,7 @@
 $ORIGIN example.com.
 $TTL 1800
 
-example.com.		IN	SOA	ns1.example.com. hostmaster.example.com. (2016080900 7200 1800 1209600 1800)
+example.com.		IN	SOA	ns1.example.com. hostmaster.example.com. (2016081100 7200 1800 1209600 1800)
 		IN	A	123.45.67.89
 		IN	TXT	"v=spf1 mx -all"
 _dmarc		IN	TXT	"v=DMARC1; p=quarantine"

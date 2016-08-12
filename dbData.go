@@ -5,8 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/robarchibald/easyDbReader"
-	"github.com/robarchibald/testableDb"
+	"github.com/robarchibald/onedb"
 )
 
 type ARecord struct {
@@ -45,7 +44,7 @@ type DnsBackend interface {
 }
 
 type Db struct {
-	Db easyDbReader.DataQuerier
+	Db onedb.OneDBer
 }
 
 func NewDb(host string, dbPort string, user string, password string, database string) (*Db, error) {
@@ -54,31 +53,35 @@ func NewDb(host string, dbPort string, user string, password string, database st
 		return nil, err
 	}
 
-	conn, err := testableDb.NewPgxDbConnection(host, uint16(port), user, password, database)
+	conn, err := onedb.NewPgxOneDB(host, uint16(port), user, password, database)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Db{easyDbReader.NewEasyDbReader(conn)}, nil
+	return &Db{conn}, nil
+}
+
+type Code struct {
+	Code int
 }
 
 func (d *Db) CreateSchema() error {
-	var code int
-	row := d.Db.QueryRow("Select 1 from information_schema.tables where table_schema = 'public' and table_name = 'domains'")
-	if err := row.Scan(&code); err != nil && err.Error() != "no rows in result set" {
+	data := Code{}
+	err := d.Db.QueryStructRow("Select 1 as Code from information_schema.tables where table_schema = 'public' and table_name = 'domains'", &data)
+	if err != nil && err.Error() != "no rows in result set" {
 		return err
 	}
 
 	// schema already exists... exit
-	if code == 1 {
+	if data.Code == 1 {
 		return nil
 	}
 
-	data, err := ioutil.ReadFile("schema.sql")
+	schema, err := ioutil.ReadFile("schema.sql")
 	if err != nil {
 		return err
 	}
-	err = d.Db.Execute(string(data))
+	err = d.Db.Execute(string(schema))
 	return err
 }
 
