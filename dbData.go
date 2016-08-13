@@ -44,7 +44,7 @@ type dnsBackend interface {
 }
 
 type db struct {
-	Db onedb.OneDBer
+	Db onedb.DBer
 }
 
 func newDb(host string, dbPort string, user string, password string, database string) (*db, error) {

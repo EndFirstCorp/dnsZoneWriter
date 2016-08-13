@@ -19,22 +19,21 @@ func TestNewDb(t *testing.T) {
 
 func TestCreateSchema(t *testing.T) {
 	// error on query
-	d := db{Db: onedb.NewMock()}
+	d := db{Db: onedb.NewMock(nil, nil)}
 	err := d.CreateSchema()
 	if err == nil {
 		t.Error("expected error due to row query error")
 	}
 
 	// schema exists
-	d = db{Db: onedb.NewMock(code{1})}
+	d = db{Db: onedb.NewMock(nil, nil, code{1})}
 	err = d.CreateSchema()
 	if err != nil {
 		t.Error("expected success since schema already exists")
 	}
 
 	// failed execute
-	reader := onedb.NewMock(code{0})
-	reader.ExecErr = errors.New("fail")
+	reader := onedb.NewMock(nil, errors.New("fail"), code{0})
 	d = db{Db: reader}
 	err = d.CreateSchema()
 	if err == nil {
@@ -42,7 +41,7 @@ func TestCreateSchema(t *testing.T) {
 	}
 
 	// successful create
-	d = db{Db: onedb.NewMock(code{0})}
+	d = db{Db: onedb.NewMock(nil, nil, code{0})}
 	err = d.CreateSchema()
 	if err != nil {
 		t.Error("expected success creating schema", err)
@@ -55,34 +54,34 @@ func TestGetDomains(t *testing.T) {
 	nsRecords := []nsRecord{nsRecord{Name: "nsrecord", DomainID: 1}, nsRecord{Name: "nsrecord2", DomainID: 2}}
 	domainRecords := []domain{domain{Name: "domain", ID: 1}, domain{Name: "domain2", ID: 2}}
 	// fail on getARecords
-	d := db{Db: onedb.NewMock()}
+	d := db{Db: onedb.NewMock(nil, nil)}
 	_, err := d.GetDomains()
 	if err == nil {
 		t.Error("expected error since there's no data in the Mock reader")
 	}
 
 	// fail on getMxRecords
-	d = db{Db: onedb.NewMock(aRecords)}
+	d = db{Db: onedb.NewMock(nil, nil, aRecords)}
 	_, err = d.GetDomains()
 	if err == nil {
 		t.Error("expected error since there's only one dataset in the Mock reader")
 	}
 
 	// fail on getNsRecords
-	d = db{Db: onedb.NewMock(aRecords, mxRecords)}
+	d = db{Db: onedb.NewMock(nil, nil, aRecords, mxRecords)}
 	_, err = d.GetDomains()
 	if err == nil {
 		t.Error("expected error since there's only one dataset in the Mock reader")
 	}
 
 	// fail on get domains
-	d = db{Db: onedb.NewMock(aRecords, mxRecords, nsRecords)}
+	d = db{Db: onedb.NewMock(nil, nil, aRecords, mxRecords, nsRecords)}
 	_, err = d.GetDomains()
 	if err == nil {
 		t.Error("expected error since there's only one dataset in the Mock reader")
 	}
 
-	d = db{Db: onedb.NewMock(aRecords, mxRecords, nsRecords, domainRecords)}
+	d = db{Db: onedb.NewMock(nil, nil, aRecords, mxRecords, nsRecords, domainRecords)}
 	domains, _ := d.GetDomains()
 	if len(domains) != 2 || domains[0].Name != "domain" || domains[1].Name != "domain2" ||
 		len(domains[1].ARecords) != 1 || len(domains[0].ARecords) != 1 || domains[0].ARecords[0].Name != "arecord" || domains[1].ARecords[0].Name != "arecord2" ||
@@ -98,7 +97,7 @@ func TestGetDomains(t *testing.T) {
 }
 
 func TestGetARecords(t *testing.T) {
-	reader := onedb.NewMock([]aRecord{aRecord{Name: "arecord"}})
+	reader := onedb.NewMock(nil, nil, []aRecord{aRecord{Name: "arecord"}})
 	db := db{Db: reader}
 	aRecords, err := db.getARecords()
 	if err != nil || len(aRecords) != 1 || aRecords[0].Name != "arecord" {
@@ -107,7 +106,7 @@ func TestGetARecords(t *testing.T) {
 }
 
 func TestGetMxRecords(t *testing.T) {
-	reader := onedb.NewMock([]mxRecord{mxRecord{Name: "mxrecord"}})
+	reader := onedb.NewMock(nil, nil, []mxRecord{mxRecord{Name: "mxrecord"}})
 	db := db{Db: reader}
 	mxRecords, err := db.getMxRecords()
 	if err != nil || len(mxRecords) != 1 || mxRecords[0].Name != "mxrecord" {
@@ -116,7 +115,7 @@ func TestGetMxRecords(t *testing.T) {
 }
 
 func TestGetNsRecords(t *testing.T) {
-	reader := onedb.NewMock([]nsRecord{nsRecord{Name: "nsrecord"}})
+	reader := onedb.NewMock(nil, nil, []nsRecord{nsRecord{Name: "nsrecord"}})
 	db := db{Db: reader}
 	nsRecords, err := db.getNsRecords()
 	if err != nil || len(nsRecords) != 1 || nsRecords[0].Name != "nsrecord" {
