@@ -6,22 +6,22 @@ import (
 	"strings"
 )
 
-type Commander interface {
-	Command(name string, arg ...string) Runner
-	PipeCommands(c1 Runner, c2 Runner) string
+type commander interface {
+	Command(name string, arg ...string) runner
+	PipeCommands(c1 runner, c2 runner) string
 }
 
-type CommandHelper struct {
+type commandHelper struct {
 }
 
-func (c *CommandHelper) Command(name string, arg ...string) Runner {
-	return &ShellRunner{cmd: exec.Command(name, arg...)}
+func (c *commandHelper) Command(name string, arg ...string) runner {
+	return &shellRunner{cmd: exec.Command(name, arg...)}
 }
 
-func (c *CommandHelper) PipeCommands(r1 Runner, r2 Runner) string {
+func (c *commandHelper) PipeCommands(r1 runner, r2 runner) string {
 	var buf bytes.Buffer
-	c1 := r1.(*ShellRunner)
-	c2 := r2.(*ShellRunner)
+	c1 := r1.(*shellRunner)
+	c2 := r2.(*shellRunner)
 	c2.cmd.Stdin, _ = c1.cmd.StdoutPipe()
 	c2.cmd.Stdout = &buf
 	c2.cmd.Start()
@@ -37,25 +37,25 @@ func (c *CommandHelper) PipeCommands(r1 Runner, r2 Runner) string {
 	return out
 }
 
-type Runner interface {
+type runner interface {
 	CombinedOutput() ([]byte, error)
 	Output() ([]byte, error)
 	SetWorkingDir(path string)
 }
 
-type ShellRunner struct {
+type shellRunner struct {
 	cmd        *exec.Cmd
 	workingDir string
 }
 
-func (r *ShellRunner) CombinedOutput() ([]byte, error) {
+func (r *shellRunner) CombinedOutput() ([]byte, error) {
 	return r.cmd.CombinedOutput()
 }
 
-func (r *ShellRunner) Output() ([]byte, error) {
+func (r *shellRunner) Output() ([]byte, error) {
 	return r.cmd.Output()
 }
 
-func (r *ShellRunner) SetWorkingDir(path string) {
+func (r *shellRunner) SetWorkingDir(path string) {
 	r.cmd.Dir = path
 }

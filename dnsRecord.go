@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type DnsRecord struct {
+type dnsRecord struct {
 	Name       string
 	TTL        string
 	Class      string
@@ -14,39 +14,38 @@ type DnsRecord struct {
 	Data       string
 }
 
-func NewARecord(name string, ipAddress string) *DnsRecord {
-	return NewDnsRecord(name, "A", ipAddress)
+func newARecord(name string, ipAddress string) *dnsRecord {
+	return newDNSRecord(name, "A", ipAddress)
 	//z.AddSshfpRecords(name)
 }
 
-func NewDnsRecord(name string, recordType string, data string) *DnsRecord {
-	return &DnsRecord{name, "", "IN", recordType, data}
+func newDNSRecord(name string, recordType string, data string) *dnsRecord {
+	return &dnsRecord{name, "", "IN", recordType, data}
 }
 
-func NewMxRecord(domain string, mxName string, priority int16) *DnsRecord {
+func newMxRecord(domain string, mxName string, priority int16) *dnsRecord {
 	if strings.HasSuffix(mxName, ".") {
-		return NewDnsRecord(domain+".", "MX", fmt.Sprintf("%d %s", priority, mxName))
-	} else {
-		return NewDnsRecord(domain+".", "MX", fmt.Sprintf("%d %s.%s.", priority, mxName, domain))
+		return newDNSRecord(domain+".", "MX", fmt.Sprintf("%d %s", priority, mxName))
 	}
+	return newDNSRecord(domain+".", "MX", fmt.Sprintf("%d %s.%s.", priority, mxName, domain))
 }
 
-func NewSoaRecord(domain string, primaryNameServer string, hostmaster string, refresh time.Duration, retry time.Duration, expire time.Duration, negativeTTL time.Duration) *DnsRecord {
-	return NewDnsRecord(domain+".", "SOA",
+func newSoaRecord(domain string, primaryNameServer string, hostmaster string, refresh time.Duration, retry time.Duration, expire time.Duration, negativeTTL time.Duration) *dnsRecord {
+	return newDNSRecord(domain+".", "SOA",
 		fmt.Sprintf("%s.%s. %s.%s. (SERIALNUMBER %d %d %d %d)", primaryNameServer, domain, hostmaster, domain,
 			int(refresh.Seconds()), int(retry.Seconds()), int(expire.Seconds()), int(negativeTTL.Seconds())))
 }
 
-func NewDkimRecord(name string, dkimValue string) *DnsRecord {
+func newDkimRecord(name string, dkimValue string) *dnsRecord {
 	recordName := "mail._domainkey"
 	if name != "" {
 		recordName += "." + name
 	}
-	return NewDnsRecord(recordName, "TXT", dkimValue)
+	return newDNSRecord(recordName, "TXT", dkimValue)
 }
 
-func NewNsRecord(domain string, nsName string) *DnsRecord {
-	return NewDnsRecord(domain+".", "NS", nsName+"."+domain+".")
+func newNsRecord(domain string, nsName string) *dnsRecord {
+	return newDNSRecord(domain+".", "NS", nsName+"."+domain+".")
 }
 
 /* while this is technically "working", there is no way to ensure that the output from the ssh-keyscan is not being returned from a MITM attacker.
@@ -64,22 +63,22 @@ func NewSshfpRecords(domain string, name string) []*DnsRecord {
 	return NewDnsRecord(domain+".", "SSHFP", "2 1 "+string(data))
 }*/
 
-func NewTlsaRecord(port int, tlsaKey string) *DnsRecord {
-	return NewDnsRecord(fmt.Sprintf("_%d._tcp", port), "TLSA", "3 0 1 "+tlsaKey)
+func newTlsaRecord(port int, tlsaKey string) *dnsRecord {
+	return newDNSRecord(fmt.Sprintf("_%d._tcp", port), "TLSA", "3 0 1 "+tlsaKey)
 }
 
-func NewSpfRecord(name string, allow string) *DnsRecord {
-	return NewDnsRecord(name, "TXT", "\"v=spf1 "+allow+" -all\"")
+func newSpfRecord(name string, allow string) *dnsRecord {
+	return newDNSRecord(name, "TXT", "\"v=spf1 "+allow+" -all\"")
 }
 
-func NewDmarcRecord(name string, policy string) *DnsRecord {
+func newDmarcRecord(name string, policy string) *dnsRecord {
 	recordName := "_dmarc"
 	if name != "" {
 		recordName += "." + name
 	}
-	return NewDnsRecord(recordName, "TXT", "\"v=DMARC1; p="+policy+"\"")
+	return newDNSRecord(recordName, "TXT", "\"v=DMARC1; p="+policy+"\"")
 }
 
-func (r *DnsRecord) ToString() string {
+func (r *dnsRecord) toString() string {
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\n", r.Name, r.TTL, r.Class, r.RecordType, r.Data)
 }

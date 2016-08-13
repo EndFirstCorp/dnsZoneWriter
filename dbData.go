@@ -8,65 +8,65 @@ import (
 	"github.com/robarchibald/onedb"
 )
 
-type ARecord struct {
-	DomainId    int16
+type aRecord struct {
+	DomainID    int16
 	Name        string
-	IpAddress   *string // nullable string
-	DynamicFqdn *string // nullable string
+	IPAddress   *string // nullable string
+	DynamicFQDN *string // nullable string
 }
 
-type MxRecord struct {
-	DomainId int16
+type mxRecord struct {
+	DomainID int16
 	Name     string
 	Priority int16
 }
 
-type NsRecord struct {
-	DomainId  int16
+type nsRecord struct {
+	DomainID  int16
 	Name      string
 	SortOrder int16
 }
 
-type Domain struct {
-	Id         int16
+type domain struct {
+	ID         int16
 	Name       string
 	DefaultTTL time.Duration
-	IpAddress  string
-	ARecords   []ARecord
-	MxRecords  []MxRecord
-	NsRecords  []NsRecord
-	DnsRecords []DnsRecord
+	IPAddress  string
+	ARecords   []aRecord
+	MxRecords  []mxRecord
+	NsRecords  []nsRecord
+	DNSRecords []dnsRecord
 }
 
-type DnsBackend interface {
+type dnsBackend interface {
 	CreateSchema() error
-	GetDomains() ([]Domain, error)
+	GetDomains() ([]domain, error)
 }
 
-type Db struct {
+type db struct {
 	Db onedb.OneDBer
 }
 
-func NewDb(host string, dbPort string, user string, password string, database string) (*Db, error) {
+func newDb(host string, dbPort string, user string, password string, database string) (*db, error) {
 	port, err := strconv.Atoi(dbPort)
 	if err != nil {
 		return nil, err
 	}
 
-	conn, err := onedb.NewPgxOneDB(host, uint16(port), user, password, database)
+	conn, err := onedb.NewPgx(host, uint16(port), user, password, database)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Db{conn}, nil
+	return &db{conn}, nil
 }
 
-type Code struct {
+type code struct {
 	Code int
 }
 
-func (d *Db) CreateSchema() error {
-	data := Code{}
+func (d *db) CreateSchema() error {
+	data := code{}
 	err := d.Db.QueryStructRow("Select 1 as Code from information_schema.tables where table_schema = 'public' and table_name = 'domains'", &data)
 	if err != nil && err.Error() != "no rows in result set" {
 		return err
@@ -85,8 +85,8 @@ func (d *Db) CreateSchema() error {
 	return err
 }
 
-func (d *Db) GetDomains() ([]Domain, error) {
-	domains := make([]Domain, 0)
+func (d *db) GetDomains() ([]domain, error) {
+	domains := []domain{}
 	aRecords, err := d.getARecords()
 	if err != nil {
 		return domains, err
@@ -105,19 +105,19 @@ func (d *Db) GetDomains() ([]Domain, error) {
 		return domains, err
 	}
 
-	for i, _ := range domains {
+	for i := range domains {
 		for _, nsRecord := range nsRecords {
-			if nsRecord.DomainId == domains[i].Id {
+			if nsRecord.DomainID == domains[i].ID {
 				domains[i].NsRecords = append(domains[i].NsRecords, nsRecord)
 			}
 		}
 		for _, mxRecord := range mxRecords {
-			if mxRecord.DomainId == domains[i].Id {
+			if mxRecord.DomainID == domains[i].ID {
 				domains[i].MxRecords = append(domains[i].MxRecords, mxRecord)
 			}
 		}
 		for _, aRecord := range aRecords {
-			if aRecord.DomainId == domains[i].Id {
+			if aRecord.DomainID == domains[i].ID {
 				domains[i].ARecords = append(domains[i].ARecords, aRecord)
 			}
 		}
@@ -125,17 +125,17 @@ func (d *Db) GetDomains() ([]Domain, error) {
 	return domains, nil
 }
 
-func (d *Db) getARecords() ([]ARecord, error) {
-	aRecords := make([]ARecord, 0)
+func (d *db) getARecords() ([]aRecord, error) {
+	aRecords := []aRecord{}
 	return aRecords, d.Db.QueryStruct("select DomainId, Name, IpAddress, DynamicFqdn from ARecords", &aRecords)
 }
 
-func (d *Db) getMxRecords() ([]MxRecord, error) {
-	mxRecords := make([]MxRecord, 0)
+func (d *db) getMxRecords() ([]mxRecord, error) {
+	mxRecords := []mxRecord{}
 	return mxRecords, d.Db.QueryStruct("select DomainId, Name, Priority from MxRecords", &mxRecords)
 }
 
-func (d *Db) getNsRecords() ([]NsRecord, error) {
-	nsRecords := make([]NsRecord, 0)
+func (d *db) getNsRecords() ([]nsRecord, error) {
+	nsRecords := []nsRecord{}
 	return nsRecords, d.Db.QueryStruct("select DomainId, Name, SortOrder from NsRecords", &nsRecords)
 }

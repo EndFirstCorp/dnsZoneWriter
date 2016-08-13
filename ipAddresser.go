@@ -5,16 +5,16 @@ import (
 	"net"
 )
 
-type IPAddresser interface {
+type ipAddresser interface {
 	GetIPAddresses() ([]string, error)
 }
 
-type IPAddressHelper struct {
-	IPAddresser
+type ipAddressHelper struct {
+	ipAddresser
 }
 
-func (h *IPAddressHelper) GetIpAddresses() ([]string, error) {
-	ips := make([]string, 0)
+func (h *ipAddressHelper) GetIPAddresses() ([]string, error) {
+	ips := []string{}
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return nil, errors.New("Unable to get IP addresses " + err.Error())

@@ -12,7 +12,7 @@ import (
 	"github.com/robarchibald/configReader"
 )
 
-type DnsZoneWriter struct {
+type dnsZoneWriter struct {
 	DbServer          string
 	DbPort            string
 	DbUser            string
@@ -21,23 +21,23 @@ type DnsZoneWriter struct {
 	NsdDir            string
 	ZoneFileDirectory string
 	ZonePassword      string
-	DkimKeyFilePath   string
-	TlsPublicKeyPath  string
-	DnsMasterIp       string
-	DnsSlaveIps       string
+	DKIMKeyFilePath   string
+	TLSPublicKeyPath  string
+	DNSMasterIP       string
+	DNSSlaveIPs       string
 	IsMaster          bool
-	DnssecKeyDir      string
+	DNSSecKeyDir      string
 	SigningAlgorithm  string
 }
 
-var shell Commander = &CommandHelper{}
+var shell commander = &commandHelper{}
 
 func main() {
-	w, err := NewDnsZoneWriter("dnsZoneWriter.conf", &IPAddressHelper{})
+	w, err := newDNSZoneWriter("dnsZoneWriter.conf", &ipAddressHelper{})
 	if err != nil {
 		log.Fatal(err)
 	}
-	db, err := NewDb(w.DbServer, w.DbPort, w.DbUser, w.DbPassword, w.DbDatabase)
+	db, err := newDb(w.DbServer, w.DbPort, w.DbUser, w.DbPassword, w.DbDatabase)
 	if err != nil {
 		log.Fatal("Unable to connect to database " + err.Error())
 	}
@@ -47,8 +47,8 @@ func main() {
 
 }
 
-func NewDnsZoneWriter(configPath string, addresser IPAddresser) (*DnsZoneWriter, error) {
-	w := &DnsZoneWriter{}
+func newDNSZoneWriter(configPath string, addresser ipAddresser) (*dnsZoneWriter, error) {
+	w := &dnsZoneWriter{}
 	err := configReader.ReadFile(configPath, w)
 	if err != nil {
 		return nil, err
@@ -57,34 +57,34 @@ func NewDnsZoneWriter(configPath string, addresser IPAddresser) (*DnsZoneWriter,
 	if err != nil {
 		return nil, err
 	}
-	w.IsMaster = w.checkIfMaster(ips)
+	w.IsMaster = w.CheckIfMaster(ips)
 	if _, err := os.Stat(w.ZoneFileDirectory); os.IsNotExist(err) {
 		return nil, err
 	}
 	return w, nil
 }
 
-func (w *DnsZoneWriter) checkIfMaster(ips []string) bool {
+func (w *dnsZoneWriter) CheckIfMaster(ips []string) bool {
 	for _, ipAddress := range ips {
-		if ipAddress == w.DnsMasterIp {
+		if ipAddress == w.DNSMasterIP {
 			return true
 		}
 	}
 	return false
 }
 
-func (w *DnsZoneWriter) UpdateZoneData(db DnsBackend) error {
-	zones, err := w.getZones(db)
+func (w *dnsZoneWriter) UpdateZoneData(db dnsBackend) error {
+	zones, err := w.GetZones(db)
 	if err != nil {
 		return errors.New("Unable to get zones from database " + err.Error())
 	}
-	if err := w.writeAll(zones); err != nil {
+	if err := w.WriteAll(zones); err != nil {
 		return (err)
 	}
 	return nil
 }
 
-func (w *DnsZoneWriter) getZones(db DnsBackend) ([]Domain, error) {
+func (w *dnsZoneWriter) GetZones(db dnsBackend) ([]domain, error) {
 	if err := db.CreateSchema(); err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (w *DnsZoneWriter) getZones(db DnsBackend) ([]Domain, error) {
 	}
 
 	for _, domain := range domains {
-		if err := domain.BuildDnsRecords(w.DkimKeyFilePath, w.TlsPublicKeyPath); err != nil {
+		if err := domain.BuildDNSRecords(w.DKIMKeyFilePath, w.TLSPublicKeyPath); err != nil {
 			return nil, err
 		}
 	}
@@ -102,13 +102,13 @@ func (w *DnsZoneWriter) getZones(db DnsBackend) ([]Domain, error) {
 	return domains, nil
 }
 
-func (w *DnsZoneWriter) writeAll(zones []Domain) error {
-	updated, err := w.writeZones(zones)
+func (w *dnsZoneWriter) WriteAll(zones []domain) error {
+	updated, err := w.WriteZones(zones)
 	if err != nil {
 		return err
 	}
 	if updated {
-		err := w.writeZoneConfig(zones, w.ZonePassword)
+		err := w.WriteZoneConfig(zones, w.ZonePassword)
 		if err != nil {
 			return err
 		}
@@ -119,7 +119,7 @@ func (w *DnsZoneWriter) writeAll(zones []Domain) error {
 	return nil
 }
 
-func (w *DnsZoneWriter) writeZones(zones []Domain) (bool, error) {
+func (w *dnsZoneWriter) WriteZones(zones []domain) (bool, error) {
 	zonesUpdated := false
 	for _, zone := range zones {
 		updated, err := zone.WriteZone(w.ZoneFileDirectory)
@@ -128,21 +128,21 @@ func (w *DnsZoneWriter) writeZones(zones []Domain) (bool, error) {
 		}
 		if updated {
 			zonesUpdated = true
-			zone.SignZone(w.ZoneFileDirectory, w.DnssecKeyDir, w.SigningAlgorithm)
+			zone.SignZone(w.ZoneFileDirectory, w.DNSSecKeyDir, w.SigningAlgorithm)
 		}
 	}
 	return zonesUpdated, nil
 }
 
-func (w *DnsZoneWriter) writeZoneConfig(zones []Domain, password string) error {
+func (w *dnsZoneWriter) WriteZoneConfig(zones []domain, password string) error {
 	config := fmt.Sprintf(`key:\n  name: "sec_key"\n  algorithm: hmac-sha256\n  secret: "%s"`, password)
 
 	for _, zone := range zones {
 		config += fmt.Sprintf("\n\nzone:\n  name: %s\n  zonefile: %s\n\n", zone.Name, zone.Name+".txt.signed")
 		if w.IsMaster {
-			config += fmt.Sprintf("  notify: %s sec_key\n  provide-xfr: %s sec_key", w.DnsSlaveIps, w.DnsSlaveIps)
+			config += fmt.Sprintf("  notify: %s sec_key\n  provide-xfr: %s sec_key", w.DNSSlaveIPs, w.DNSSlaveIPs)
 		} else {
-			config += fmt.Sprintf("  allow-notify: %s sec_key\n  request-xfr: AXFR %s@53 sec_key", w.DnsMasterIp, w.DnsMasterIp)
+			config += fmt.Sprintf("  allow-notify: %s sec_key\n  request-xfr: AXFR %s@53 sec_key", w.DNSMasterIP, w.DNSMasterIP)
 		}
 	}
 	return ioutil.WriteFile(filepath.Join(w.NsdDir, "zones.conf"), []byte(config), 640)
@@ -188,7 +188,7 @@ func keysExist(filePrefix string) bool {
 }
 
 func createSigningKeys(keyDir string, domain string, signingAlgorithm string, keyType string) error {
-	var cmd Runner
+	var cmd runner
 	if keyType == "KSK" {
 		cmd = shell.Command("/usr/bin/ldns-keygen", "-a", signingAlgorithm, "-b", "2048", "-k", domain)
 	} else {

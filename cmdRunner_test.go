@@ -5,16 +5,16 @@ import (
 )
 
 func TestCommand(t *testing.T) {
-	shell := &CommandHelper{}
+	shell := &commandHelper{}
 	cmd := shell.Command("ls", "-l")
-	runner := cmd.(*ShellRunner)
+	runner := cmd.(*shellRunner)
 	if runner.cmd.Args[0] != "ls" || runner.cmd.Args[1] != "-l" {
 		t.Error("expected valid command")
 	}
 }
 
 func TestPipeCommands(t *testing.T) {
-	shell := &CommandHelper{}
+	shell := &commandHelper{}
 	c1 := shell.Command("ls")
 	c2 := shell.Command("grep", "cmdRunner")
 	output := shell.PipeCommands(c1, c2)

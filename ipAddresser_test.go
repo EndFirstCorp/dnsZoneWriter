@@ -5,8 +5,8 @@ import (
 )
 
 func TestIpAddressHelper(t *testing.T) {
-	h := &IPAddressHelper{}
-	addr, err := h.GetIpAddresses()
+	h := &ipAddressHelper{}
+	addr, err := h.GetIPAddresses()
 	if err != nil || len(addr) == 0 {
 		t.Error("expected to get back ip addresses")
 	}

@@ -21,9 +21,9 @@ const expire time.Duration = 24 * 7 * 2 * time.Hour // 2 weeks
 const negativeTTL time.Duration = 30 * time.Minute
 const hostmaster string = "hostmaster"
 
-var nameToIp map[string]string = make(map[string]string)
+var nameToIP = make(map[string]string)
 
-func (d *Domain) BuildDnsRecords(dkimKeyFilePath string, sslCertificatePath string) error {
+func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath string) error {
 	d.DefaultTTL = defaultTTL
 	dkimValue := getDkimValue(dkimKeyFilePath)
 	tlsaKey := getTlsaKey(sslCertificatePath)
@@ -31,52 +31,52 @@ func (d *Domain) BuildDnsRecords(dkimKeyFilePath string, sslCertificatePath stri
 	if len(d.NsRecords) == 0 {
 		return errors.New("One or more NS records is required")
 	}
-	d.add(NewSoaRecord(d.Name, d.NsRecords[0].Name, hostmaster, refresh, retry, expire, negativeTTL))
-	d.addDomainRecords("", d.IpAddress, "mx", "quarantine")
-	d.add(NewTlsaRecord(25, tlsaKey))
-	d.add(NewTlsaRecord(443, tlsaKey))
-	d.add(NewDkimRecord("", dkimValue))
+	d.Add(newSoaRecord(d.Name, d.NsRecords[0].Name, hostmaster, refresh, retry, expire, negativeTTL))
+	d.AddDomainRecords("", d.IPAddress, "mx", "quarantine")
+	d.Add(newTlsaRecord(25, tlsaKey))
+	d.Add(newTlsaRecord(443, tlsaKey))
+	d.Add(newDkimRecord("", dkimValue))
 
 	for _, nameServer := range d.NsRecords {
-		d.add(NewNsRecord(d.Name, nameServer.Name))
+		d.Add(newNsRecord(d.Name, nameServer.Name))
 	}
 	for _, mailServer := range d.MxRecords {
-		d.add(NewMxRecord(d.Name, mailServer.Name, mailServer.Priority))
+		d.Add(newMxRecord(d.Name, mailServer.Name, mailServer.Priority))
 		// add dkim record if not a fqdn on a different domain
 		if !strings.HasSuffix(mailServer.Name, ".") || strings.Contains(mailServer.Name, d.Name+".") {
-			d.add(NewDkimRecord(mailServer.Name, dkimValue))
+			d.Add(newDkimRecord(mailServer.Name, dkimValue))
 		}
 	}
 	for _, server := range d.ARecords {
-		d.addDomain(server.Name, server.IpAddress, server.DynamicFqdn)
+		d.AddDomain(server.Name, server.IPAddress, server.DynamicFQDN)
 	}
 	return nil
 }
 
-func (d *Domain) add(record *DnsRecord) {
-	d.DnsRecords = append(d.DnsRecords, *record)
+func (d *domain) Add(record *dnsRecord) {
+	d.DNSRecords = append(d.DNSRecords, *record)
 }
 
-func (d *Domain) addDomain(name string, ipAddress *string, dynamicFqdn *string) {
-	ip := getIp(ipAddress, dynamicFqdn)
+func (d *domain) AddDomain(name string, ipAddress *string, dynamicFqdn *string) {
+	ip := getIP(ipAddress, dynamicFqdn)
 	spfAllow := ""
 	dmarcPolicy := "reject"
 	if isMx(name, d.MxRecords) {
 		spfAllow = "ip4:" + ip
 		dmarcPolicy = "quarantine"
 	}
-	d.addDomainRecords(name, ip, spfAllow, dmarcPolicy)
+	d.AddDomainRecords(name, ip, spfAllow, dmarcPolicy)
 }
 
-func (d *Domain) addDomainRecords(name string, ipAddress string, spfAllow string, dmarcPolicy string) {
+func (d *domain) AddDomainRecords(name string, ipAddress string, spfAllow string, dmarcPolicy string) {
 	if ipAddress != "" {
-		d.add(NewARecord(name, ipAddress))
+		d.Add(newARecord(name, ipAddress))
 	}
-	d.add(NewSpfRecord(name, spfAllow))
-	d.add(NewDmarcRecord(name, dmarcPolicy))
+	d.Add(newSpfRecord(name, spfAllow))
+	d.Add(newDmarcRecord(name, dmarcPolicy))
 }
 
-func isMx(name string, mailServers []MxRecord) bool {
+func isMx(name string, mailServers []mxRecord) bool {
 	for _, mx := range mailServers {
 		if mx.Name == name {
 			return true
@@ -85,23 +85,23 @@ func isMx(name string, mailServers []MxRecord) bool {
 	return false
 }
 
-func getIp(ipAddress *string, dynamicFqdn *string) string {
+func getIP(ipAddress *string, dynamicFqdn *string) string {
 	if ipAddress != nil {
 		return *ipAddress
 	}
 
 	fqdn := *dynamicFqdn
-	savedIp := nameToIp[fqdn]
-	if savedIp != "" {
-		return savedIp
+	savedIP := nameToIP[fqdn]
+	if savedIP != "" {
+		return savedIP
 	}
 
-	resolvedIp, _ := net.LookupIP(fqdn)
-	if len(resolvedIp) == 0 {
+	resolvedIP, _ := net.LookupIP(fqdn)
+	if len(resolvedIP) == 0 {
 		return ""
 	}
-	nameToIp[fqdn] = resolvedIp[0].String()
-	return nameToIp[fqdn]
+	nameToIP[fqdn] = resolvedIP[0].String()
+	return nameToIP[fqdn]
 }
 
 func getTlsaKey(filePath string) string {
@@ -123,19 +123,19 @@ func getDkimValue(filePath string) string {
 	return publicKey
 }
 
-func (d *Domain) ToString(serialNumber string) string {
+func (d *domain) String(serialNumber string) string {
 	var buffer bytes.Buffer
 	buffer.WriteString("\n")
 	buffer.WriteString(fmt.Sprintf("$ORIGIN %s.\n", d.Name))
 	buffer.WriteString(fmt.Sprintf("$TTL %d\n", int(d.DefaultTTL.Seconds())))
 	buffer.WriteString("\n")
-	for _, record := range d.DnsRecords {
-		buffer.WriteString(record.ToString())
+	for _, record := range d.DNSRecords {
+		buffer.WriteString(record.toString())
 	}
 	return strings.Replace(buffer.String(), "SERIALNUMBER", serialNumber, 1)
 }
 
-func (d *Domain) WriteZone(folder string) (bool, error) {
+func (d *domain) WriteZone(folder string) (bool, error) {
 	filename := filepath.Join(folder, d.Name+".txt")
 	currentZone, currentSerialNumber, err := loadZoneFile(filename)
 	if err != nil {
@@ -143,16 +143,16 @@ func (d *Domain) WriteZone(folder string) (bool, error) {
 	}
 
 	newSerialNumber := time.Now().Format("2006010200")
-	if currentZone == "" || currentZone != d.ToString(currentSerialNumber) {
+	if currentZone == "" || currentZone != d.String(currentSerialNumber) {
 		newSerialNumber = getSerialNumberRevision(currentSerialNumber, newSerialNumber)
 
-		ioutil.WriteFile(filename, []byte(d.ToString(newSerialNumber)), 644)
+		ioutil.WriteFile(filename, []byte(d.String(newSerialNumber)), 644)
 		return true, nil
 	}
 	return false, nil
 }
 
-func (d *Domain) SignZone(zoneDir string, keyDir string, signingAlgorithm string) error {
+func (d *domain) SignZone(zoneDir string, keyDir string, signingAlgorithm string) error {
 	date := time.Now().Add(time.Hour * 24 * 30).Format("20060102") // add 30 days to current time
 	kskFile, zskFile, err := getSigningKeyPrefixes(d.Name, signingAlgorithm, keyDir)
 	if err != nil {

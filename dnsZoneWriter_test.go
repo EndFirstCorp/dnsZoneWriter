@@ -9,27 +9,27 @@ import (
 )
 
 func TestNewDnsZoneWriter(t *testing.T) {
-	w, _ := NewDnsZoneWriter("testData/testConfig.conf", NewMockIpAddresser("", nil))
+	w, _ := newDNSZoneWriter("testData/testConfig.conf", newMockIPAddresser("", nil))
 	if w.IsMaster == true || w.DbDatabase != "dnsConfig" {
 		t.Error("expected to create from config file")
 	}
 
-	_, err := NewDnsZoneWriter("testData/testConfig.conf", NewMockIpAddresser("", errors.New("fail")))
+	_, err := newDNSZoneWriter("testData/testConfig.conf", newMockIPAddresser("", errors.New("fail")))
 	if err == nil {
 		t.Error("expected error due to IP address error")
 	}
 
-	w, _ = NewDnsZoneWriter("testData/testConfig.conf", NewMockIpAddresser("10.1.0.6", nil))
+	w, _ = newDNSZoneWriter("testData/testConfig.conf", newMockIPAddresser("10.1.0.6", nil))
 	if w.IsMaster != true {
 		t.Error("expected to be master since IP address = master")
 	}
 
-	_, err = NewDnsZoneWriter("bogus", NewMockIpAddresser("", nil))
+	_, err = newDNSZoneWriter("bogus", newMockIPAddresser("", nil))
 	if err == nil {
 		t.Error("expected error due to bogus config file")
 	}
 
-	_, err = NewDnsZoneWriter("dnsZoneWriter.conf", NewMockIpAddresser("", nil))
+	_, err = newDNSZoneWriter("dnsZoneWriter.conf", newMockIPAddresser("", nil))
 	if err == nil {
 		t.Error("expected error due to missing zones folder")
 	}
@@ -37,15 +37,15 @@ func TestNewDnsZoneWriter(t *testing.T) {
 
 func TestUpdateZoneDate(t *testing.T) {
 	os.Remove("testData/example1.com.txt")
-	db := &MockBackend{getDomainsErr: errors.New("fail")}
-	w := &DnsZoneWriter{}
+	db := &mockBackend{getDomainsErr: errors.New("fail")}
+	w := &dnsZoneWriter{}
 	err := w.UpdateZoneData(db)
 	if err == nil {
 		t.Error("expected error from db fetch")
 	}
 
-	db = &MockBackend{domains: []Domain{Domain{Name: "example1.com", NsRecords: []NsRecord{NsRecord{Name: "ns1"}}}}}
-	w = &DnsZoneWriter{ZoneFileDirectory: "testData", NsdDir: "testData"}
+	db = &mockBackend{domains: []domain{domain{Name: "example1.com", NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}}}
+	w = &dnsZoneWriter{ZoneFileDirectory: "testData", NsdDir: "testData"}
 	err = w.UpdateZoneData(db)
 	if err != nil {
 		t.Error("expected success", err)
@@ -54,7 +54,7 @@ func TestUpdateZoneDate(t *testing.T) {
 		t.Error("expected example1.com.txt to be created")
 	}
 
-	db = &MockBackend{domains: []Domain{Domain{Name: "&?\\/#@*^%bogus", NsRecords: []NsRecord{NsRecord{Name: "ns1"}}}}}
+	db = &mockBackend{domains: []domain{domain{Name: "&?\\/#@*^%bogus", NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}}}
 	err = w.UpdateZoneData(db)
 	if err == nil {
 		t.Error("expected failure with bogus domain name")
@@ -63,31 +63,31 @@ func TestUpdateZoneDate(t *testing.T) {
 
 func TestGetZones(t *testing.T) {
 	// fail creating schema
-	db := &MockBackend{createSchemaErr: errors.New("fail")}
-	w := &DnsZoneWriter{}
-	_, err := w.getZones(db)
+	db := &mockBackend{createSchemaErr: errors.New("fail")}
+	w := &dnsZoneWriter{}
+	_, err := w.GetZones(db)
 	if err == nil {
 		t.Error("expected error")
 	}
 
 	// fail getting domains
-	db = &MockBackend{getDomainsErr: errors.New("fail")}
-	_, err = w.getZones(db)
+	db = &mockBackend{getDomainsErr: errors.New("fail")}
+	_, err = w.GetZones(db)
 	if err == nil {
 		t.Error("expected error")
 	}
 
 	// get domains, but fail to build DNS records (no name server)
-	db = &MockBackend{domains: []Domain{Domain{Name: "example.com"}}}
-	_, err = w.getZones(db)
+	db = &mockBackend{domains: []domain{domain{Name: "example.com"}}}
+	_, err = w.GetZones(db)
 	if err == nil {
 		t.Error("expected error")
 	}
 
 	// success
-	domains := []Domain{Domain{Name: "example.com", NsRecords: []NsRecord{NsRecord{}}}}
-	db = &MockBackend{domains: domains}
-	actual, err := w.getZones(db)
+	domains := []domain{domain{Name: "example.com", NsRecords: []nsRecord{nsRecord{}}}}
+	db = &mockBackend{domains: domains}
+	actual, err := w.GetZones(db)
 	if err != nil || len(actual) != 1 {
 		t.Error("expected success", err, actual, domains)
 	}
@@ -96,18 +96,18 @@ func TestGetZones(t *testing.T) {
 func TestWriteAll(t *testing.T) {
 	// isMaster=true so restart
 	os.Remove("testData/example2.com.txt")
-	zones := []Domain{Domain{Name: "example2.com"}}
-	w := &DnsZoneWriter{IsMaster: true, ZoneFileDirectory: "testData", NsdDir: "testData"}
-	err := w.writeAll(zones)
+	zones := []domain{domain{Name: "example2.com"}}
+	w := &dnsZoneWriter{IsMaster: true, ZoneFileDirectory: "testData", NsdDir: "testData"}
+	err := w.WriteAll(zones)
 	if err == nil {
 		t.Error("expected failure due to NSD restart")
 	}
 
 	// success
 	os.Remove("testData/example3.com.txt")
-	zones = []Domain{Domain{Name: "example3.com"}}
-	w = &DnsZoneWriter{ZoneFileDirectory: "testData", NsdDir: "testData"}
-	err = w.writeAll(zones)
+	zones = []domain{domain{Name: "example3.com"}}
+	w = &dnsZoneWriter{ZoneFileDirectory: "testData", NsdDir: "testData"}
+	err = w.WriteAll(zones)
 	if err != nil {
 		t.Error("expected success", err)
 	}
@@ -116,24 +116,24 @@ func TestWriteAll(t *testing.T) {
 	}
 
 	// bad zone name
-	zones = []Domain{Domain{Name: "&?\\/#@*^%bogus"}}
-	err = w.writeAll(zones)
+	zones = []domain{domain{Name: "&?\\/#@*^%bogus"}}
+	err = w.WriteAll(zones)
 	if err == nil {
 		t.Error("expected error", err)
 	}
 
 	// bad zone directory
 	os.Remove("testData/example4.com.txt")
-	zones = []Domain{Domain{Name: "example4.com"}}
-	w = &DnsZoneWriter{NsdDir: "&?\\/#@*^%bogus", ZoneFileDirectory: "testData"}
-	err = w.writeAll(zones)
+	zones = []domain{domain{Name: "example4.com"}}
+	w = &dnsZoneWriter{NsdDir: "&?\\/#@*^%bogus", ZoneFileDirectory: "testData"}
+	err = w.WriteAll(zones)
 	if err == nil {
 		t.Error("expected error", err)
 	}
 }
 
 func TestRestartNsdServer(t *testing.T) {
-	shell = &MockCommander{}
+	shell = &mockCommander{}
 	err := restartNsdServer()
 	if err != nil {
 		t.Error("expected success")
@@ -141,13 +141,13 @@ func TestRestartNsdServer(t *testing.T) {
 }
 
 func TestGetSigningKeyPrefixes(t *testing.T) {
-	shell = &MockCommander{Return: "keygenOutput"}
+	shell = &mockCommander{Return: "keygenOutput"}
 	ksk, zsk, err := getSigningKeyPrefixes("example.com", "ALG", "testData")
 	if err != nil || !strings.HasSuffix(zsk, "example.com.ALG.ZSK") || !strings.HasSuffix(ksk, "example.com.ALG.KSK") {
 		t.Error("expected success", err, ksk, zsk)
 	}
 
-	shell = &MockCommander{Return: "keygenOutput"}
+	shell = &mockCommander{Return: "keygenOutput"}
 	ksk, zsk, err = getSigningKeyPrefixes("example1.com", "ALG", "testData")
 	if err == nil {
 		t.Error("expected failure on create of ZSK files")
@@ -197,58 +197,58 @@ func TestRenameKeyFiles(t *testing.T) {
 }
 
 /********************** MOCKS ***********************/
-func NewMockIpAddresser(ipAddress string, err error) *MockIpAddresser {
-	return &MockIpAddresser{Addresses: []string{ipAddress}, Err: err}
+func newMockIPAddresser(ipAddress string, err error) *mockIPAddresser {
+	return &mockIPAddresser{Addresses: []string{ipAddress}, Err: err}
 }
 
-type MockIpAddresser struct {
-	IPAddresser
+type mockIPAddresser struct {
+	ipAddresser
 	Addresses []string
 	Err       error
 }
 
-func (a *MockIpAddresser) GetIPAddresses() ([]string, error) {
+func (a *mockIPAddresser) GetIPAddresses() ([]string, error) {
 	return a.Addresses, a.Err
 }
 
-type MockBackend struct {
-	domains         []Domain
+type mockBackend struct {
+	domains         []domain
 	getDomainsErr   error
 	createSchemaErr error
 }
 
-func NewMockBackend(domains []Domain) *MockBackend {
-	return &MockBackend{domains: domains}
+func newMockBackend(domains []domain) *mockBackend {
+	return &mockBackend{domains: domains}
 }
 
-func (b *MockBackend) CreateSchema() error {
+func (b *mockBackend) CreateSchema() error {
 	return b.createSchemaErr
 }
 
-func (b *MockBackend) GetDomains() ([]Domain, error) {
+func (b *mockBackend) GetDomains() ([]domain, error) {
 	return b.domains, b.getDomainsErr
 }
 
-type MockCommander struct {
+type mockCommander struct {
 	Return string
 }
 
-func (c *MockCommander) Command(name string, arg ...string) Runner {
+func (c *mockCommander) Command(name string, arg ...string) runner {
 	return &MockCmdRunner{ByteReturn: []byte(c.Return)}
 }
 
-func (c *MockCommander) PipeCommands(r1 Runner, r2 Runner) string {
+func (c *mockCommander) PipeCommands(r1 runner, r2 runner) string {
 	return c.Return
 }
 
-type MockErrCommander struct {
+type mockErrCommander struct {
 }
 
-func (c *MockErrCommander) Command(name string, arg ...string) Runner {
+func (c *mockErrCommander) Command(name string, arg ...string) runner {
 	return &MockCmdRunner{ErrReturn: errors.New("fail")}
 }
 
-func (c *MockErrCommander) PipeCommands(r1 Runner, r2 Runner) string {
+func (c *mockErrCommander) PipeCommands(r1 runner, r2 runner) string {
 	return ""
 }
 
