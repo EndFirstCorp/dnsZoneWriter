@@ -7,15 +7,15 @@ import (
 
 func TestBuildDnsRecords(t *testing.T) {
 	ipAddress := "123.45.67.89"
-	d := &domain{Name: "example.com", IPAddress: ipAddress,
+	d := &domain{Name: "example.com",
 		NsRecords:    []nsRecord{nsRecord{Name: "ns1"}},
 		MxRecords:    []mxRecord{mxRecord{Name: "mail1", Priority: 10}},
-		ARecords:     []aRecord{aRecord{Name: "server", IPAddress: &ipAddress}},
+		ARecords:     []aRecord{aRecord{Name: "", IPAddress: &ipAddress}, aRecord{Name: "server", IPAddress: &ipAddress}},
 		CNameRecords: []cnameRecord{cnameRecord{Name: "cname", CanonicalName: "cname.example.com"}}}
 	d.BuildDNSRecords("mail.txt", "ssl_certificate.pem")
-	if len(d.DNSRecords) != 14 || d.DNSRecords[0].RecordType != "SOA" || d.DNSRecords[1].RecordType != "A" || d.DNSRecords[2].Data != "\"v=spf1 mx -all\"" || d.DNSRecords[3].Data != "\"v=DMARC1; p=quarantine\"" ||
-		d.DNSRecords[4].RecordType != "TLSA" || d.DNSRecords[5].RecordType != "TLSA" || d.DNSRecords[6].Name != "mail._domainkey" || d.DNSRecords[7].RecordType != "NS" || d.DNSRecords[8].RecordType != "MX" ||
-		d.DNSRecords[9].Name != "mail._domainkey.mail1" || d.DNSRecords[10].RecordType != "A" || d.DNSRecords[11].Data != "\"v=spf1  -all\"" || d.DNSRecords[12].Data != "\"v=DMARC1; p=reject\"" || d.DNSRecords[13].Data != "cname.example.com" {
+	if len(d.DNSRecords) != 14 || d.DNSRecords[0].RecordType != "SOA" || d.DNSRecords[1].RecordType != "TLSA" || d.DNSRecords[2].RecordType != "TLSA" || d.DNSRecords[3].Name != "mail._domainkey" || d.DNSRecords[4].RecordType != "NS" || d.DNSRecords[5].RecordType != "MX" ||
+		d.DNSRecords[6].Name != "mail._domainkey.mail1" || d.DNSRecords[7].RecordType != "A" || d.DNSRecords[8].Data != "\"v=spf1 mx -all\"" || d.DNSRecords[9].Data != "\"v=DMARC1; p=quarantine\"" ||
+		d.DNSRecords[10].RecordType != "A" || d.DNSRecords[11].Data != "\"v=spf1  -all\"" || d.DNSRecords[12].Data != "\"v=DMARC1; p=reject\"" || d.DNSRecords[13].Data != "cname.example.com" {
 		t.Fatalf("expected 14 dns records with specific values: %s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n", d.DNSRecords[0], d.DNSRecords[1], d.DNSRecords[2], d.DNSRecords[3], d.DNSRecords[4], d.DNSRecords[5], d.DNSRecords[6], d.DNSRecords[7], d.DNSRecords[8], d.DNSRecords[9], d.DNSRecords[10], d.DNSRecords[11], d.DNSRecords[12], d.DNSRecords[13])
 	}
 }
@@ -109,20 +109,20 @@ func TestGetDkimValueNotFound(t *testing.T) {
 
 func TestDomainToString(t *testing.T) {
 	ipAddress := "123.45.67.89"
-	d := &domain{Name: "example.com", IPAddress: ipAddress, NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}
+	d := &domain{Name: "example.com", ARecords: []aRecord{aRecord{Name: "", IPAddress: &ipAddress}}, NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}
 	d.BuildDNSRecords("bogus", "bogus")
 	expected := `
 $ORIGIN example.com.
 $TTL 1800
 
 example.com.		IN	SOA	ns1.example.com. hostmaster.example.com. (1234567 7200 1800 1209600 1800)
-		IN	A	123.45.67.89
-		IN	TXT	"v=spf1 mx -all"
-_dmarc		IN	TXT	"v=DMARC1; p=quarantine"
 _25._tcp		IN	TLSA	3 0 1 TLSA_KEY_FILE_NOT_FOUND_AT_bogus
 _443._tcp		IN	TLSA	3 0 1 TLSA_KEY_FILE_NOT_FOUND_AT_bogus
 mail._domainkey		IN	TXT	DKIM_KEY_NOT_FOUND_AT_bogus
 example.com.		IN	NS	ns1.example.com.
+example.com.		IN	A	123.45.67.89
+example.com.		IN	TXT	"v=spf1 mx -all"
+_dmarc.example.com.		IN	TXT	"v=DMARC1; p=quarantine"
 `
 	actual := d.String("1234567")
 	if expected != actual {
@@ -132,7 +132,7 @@ example.com.		IN	NS	ns1.example.com.
 
 func TestWriteDomain(t *testing.T) {
 	ipAddress := "123.45.67.89"
-	d := &domain{Name: "example.com", IPAddress: ipAddress, NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}
+	d := &domain{Name: "example.com", ARecords: []aRecord{aRecord{Name: "", IPAddress: &ipAddress}}, NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}
 	d.BuildDNSRecords("bogus", "bogus")
 
 	os.Remove("example.com.txt")
@@ -142,7 +142,7 @@ func TestWriteDomain(t *testing.T) {
 
 func TestSignZone(t *testing.T) {
 	shell = &mockCommander{}
-	d := &domain{Name: "example.com", IPAddress: "123.45.67.89", NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}
+	d := &domain{Name: "example.com", NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}
 	err := d.SignZone("testData", "testData", "ALG")
 	if err != nil {
 		t.Error("expected success", err)

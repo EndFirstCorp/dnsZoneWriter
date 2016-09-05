@@ -32,7 +32,6 @@ func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath stri
 		return errors.New("One or more NS records is required")
 	}
 	d.Add(newSoaRecord(d.Name, d.NsRecords[0].Name, hostmaster, refresh, retry, expire, negativeTTL))
-	d.AddDomainRecords("", d.IPAddress, "mx", "quarantine")
 	d.Add(newTlsaRecord(25, tlsaKey))
 	d.Add(newTlsaRecord(443, tlsaKey))
 	d.Add(newDkimRecord("", dkimValue))
@@ -62,11 +61,16 @@ func (d *domain) Add(record *dnsRecord) {
 
 func (d *domain) AddDomain(name string, ipAddress *string, dynamicFqdn *string) {
 	ip := getIP(ipAddress, dynamicFqdn)
-	spfAllow := ""
-	dmarcPolicy := "reject"
-	if isMx(name, d.MxRecords) {
+	var spfAllow, dmarcPolicy string
+	if name == "" { // apex domain, allow mx servers to send
+		name = d.Name + "."
+		spfAllow = "mx"
+		dmarcPolicy = "quarantine"
+	} else if isMx(name, d.MxRecords) { // mx servers, allow this ip to send
 		spfAllow = "ip4:" + ip
 		dmarcPolicy = "quarantine"
+	} else { // all else, reject
+		dmarcPolicy = "reject"
 	}
 	d.AddDomainRecords(name, ip, spfAllow, dmarcPolicy)
 }

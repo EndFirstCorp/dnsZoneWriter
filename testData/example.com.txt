@@ -2,11 +2,11 @@
 $ORIGIN example.com.
 $TTL 1800
 
-example.com.		IN	SOA	ns1.example.com. hostmaster.example.com. (2016081100 7200 1800 1209600 1800)
-		IN	A	123.45.67.89
-		IN	TXT	"v=spf1 mx -all"
-_dmarc		IN	TXT	"v=DMARC1; p=quarantine"
+example.com.		IN	SOA	ns1.example.com. hostmaster.example.com. (2016090503 7200 1800 1209600 1800)
 _25._tcp		IN	TLSA	3 0 1 TLSA_KEY_FILE_NOT_FOUND_AT_bogus
 _443._tcp		IN	TLSA	3 0 1 TLSA_KEY_FILE_NOT_FOUND_AT_bogus
 mail._domainkey		IN	TXT	DKIM_KEY_NOT_FOUND_AT_bogus
 example.com.		IN	NS	ns1.example.com.
+example.com.		IN	A	123.45.67.89
+example.com.		IN	TXT	"v=spf1 mx -all"
+_dmarc.example.com.		IN	TXT	"v=DMARC1; p=quarantine"

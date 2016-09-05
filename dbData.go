@@ -37,7 +37,6 @@ type domain struct {
 	ID           int16
 	Name         string
 	DefaultTTL   time.Duration
-	IPAddress    string
 	ARecords     []aRecord
 	MxRecords    []mxRecord
 	NsRecords    []nsRecord
@@ -111,7 +110,7 @@ func (d *db) GetDomains() ([]domain, error) {
 		return domains, err
 	}
 
-	err = d.Db.QueryStruct("select Id, Name, IpAddress from Domains", &domains)
+	err = d.Db.QueryStruct("select Id, Name from Domains", &domains)
 	if err != nil {
 		return domains, err
 	}
