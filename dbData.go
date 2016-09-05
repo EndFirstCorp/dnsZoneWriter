@@ -87,7 +87,7 @@ func (d *db) CreateSchema() error {
 	if err != nil {
 		return err
 	}
-	err = d.Db.Execute(string(schema))
+	err = d.Db.Execute(onedb.NewSqlQuery(string(schema)))
 	return err
 }
 
