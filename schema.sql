@@ -11,9 +11,9 @@ CONSTRAINT PK_Zones PRIMARY KEY (Id)
 CREATE TABLE ARecords (
 DomainId                  SMALLINT        NOT NULL,
 Name                      VARCHAR(50)     NOT NULL,
-IpAddress                 VARCHAR(15)     NULL,
-DynamicFQDN               VARCHAR(255)    NULL,
-CONSTRAINT PK_SubDomains PRIMARY KEY (DomainId,Name),
+IpAddress                 VARCHAR(15)     NOT NULL,
+DynamicFQDN               VARCHAR(255)    NOT NULL,
+CONSTRAINT PK_ARecordss PRIMARY KEY (DomainId,Name,IpAddress,DynamicFQDN),
 CONSTRAINT FK_ARecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
 );
 

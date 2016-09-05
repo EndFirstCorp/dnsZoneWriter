@@ -11,8 +11,8 @@ import (
 type aRecord struct {
 	DomainID    int16
 	Name        string
-	IPAddress   *string // nullable string
-	DynamicFQDN *string // nullable string
+	IPAddress   string
+	DynamicFQDN string
 }
 
 type mxRecord struct {

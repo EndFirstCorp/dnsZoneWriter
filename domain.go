@@ -59,7 +59,7 @@ func (d *domain) Add(record *dnsRecord) {
 	d.DNSRecords = append(d.DNSRecords, *record)
 }
 
-func (d *domain) AddDomain(name string, ipAddress *string, dynamicFqdn *string) {
+func (d *domain) AddDomain(name, ipAddress, dynamicFqdn string) {
 	ip := getIP(ipAddress, dynamicFqdn)
 	var spfAllow, dmarcPolicy string
 	if name == "" { // apex domain, allow mx servers to send
@@ -92,23 +92,22 @@ func isMx(name string, mailServers []mxRecord) bool {
 	return false
 }
 
-func getIP(ipAddress *string, dynamicFqdn *string) string {
-	if ipAddress != nil {
-		return *ipAddress
+func getIP(ipAddress, dynamicFqdn string) string {
+	if ipAddress != "" {
+		return ipAddress
 	}
 
-	fqdn := *dynamicFqdn
-	savedIP := nameToIP[fqdn]
+	savedIP := nameToIP[dynamicFqdn]
 	if savedIP != "" {
 		return savedIP
 	}
 
-	resolvedIP, _ := net.LookupIP(fqdn)
+	resolvedIP, _ := net.LookupIP(dynamicFqdn)
 	if len(resolvedIP) == 0 {
 		return ""
 	}
-	nameToIP[fqdn] = resolvedIP[0].String()
-	return nameToIP[fqdn]
+	nameToIP[dynamicFqdn] = resolvedIP[0].String()
+	return nameToIP[dynamicFqdn]
 }
 
 func getTlsaKey(filePath string) string {

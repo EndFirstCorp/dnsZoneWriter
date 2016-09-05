@@ -10,7 +10,7 @@ func TestBuildDnsRecords(t *testing.T) {
 	d := &domain{Name: "example.com",
 		NsRecords:    []nsRecord{nsRecord{Name: "ns1"}},
 		MxRecords:    []mxRecord{mxRecord{Name: "mail1", Priority: 10}},
-		ARecords:     []aRecord{aRecord{Name: "", IPAddress: &ipAddress}, aRecord{Name: "server", IPAddress: &ipAddress}},
+		ARecords:     []aRecord{aRecord{Name: "", IPAddress: ipAddress}, aRecord{Name: "server", IPAddress: ipAddress}},
 		CNameRecords: []cnameRecord{cnameRecord{Name: "cname", CanonicalName: "cname.example.com"}}}
 	d.BuildDNSRecords("mail.txt", "ssl_certificate.pem")
 	if len(d.DNSRecords) != 14 || d.DNSRecords[0].RecordType != "SOA" || d.DNSRecords[1].RecordType != "TLSA" || d.DNSRecords[2].RecordType != "TLSA" || d.DNSRecords[3].Name != "mail._domainkey" || d.DNSRecords[4].RecordType != "NS" || d.DNSRecords[5].RecordType != "MX" ||
@@ -31,8 +31,7 @@ func TestAdd(t *testing.T) {
 
 func TestAddDomain(t *testing.T) {
 	d := &domain{}
-	ipAddress := "123.45.67.88"
-	d.AddDomain("name", &ipAddress, nil)
+	d.AddDomain("name", "123.45.67.89", "")
 	if len(d.DNSRecords) != 3 || d.DNSRecords[0].RecordType != "A" ||
 		d.DNSRecords[1].Data != "\"v=spf1  -all\"" || d.DNSRecords[2].Data != "\"v=DMARC1; p=reject\"" {
 		t.Fatal("expected to have added A record, SPF record and DMARC record", d.DNSRecords)
@@ -41,8 +40,7 @@ func TestAddDomain(t *testing.T) {
 
 func TestAddDomainDynamicMx(t *testing.T) {
 	d := &domain{MxRecords: []mxRecord{mxRecord{1, "name", 5}}}
-	fqdn := "google-public-dns-a.google.com"
-	d.AddDomain("name", nil, &fqdn)
+	d.AddDomain("name", "", "google-public-dns-a.google.com")
 	if len(d.DNSRecords) != 3 || d.DNSRecords[0].RecordType != "A" ||
 		d.DNSRecords[1].Data != "\"v=spf1 ip4:8.8.8.8 -all\"" || d.DNSRecords[2].Data != "\"v=DMARC1; p=quarantine\"" {
 		t.Fatal("expected to have added A record, SPF record and DMARC record", d.DNSRecords)
@@ -53,12 +51,12 @@ func TestGetIp(t *testing.T) {
 	bogus := "bogus.domain"
 	fqdn := "google-public-dns-a.google.com"
 	nameToIP["google-public-dns-a.google.com"] = "" // ensure not filled yet
-	ipResolve := getIP(nil, &fqdn)                  // should do a name resolution this time
-	ipMap := getIP(nil, &fqdn)                      // should pull from map this time
+	ipResolve := getIP("", fqdn)                    // should do a name resolution this time
+	ipMap := getIP("", fqdn)                        // should pull from map this time
 	if ipResolve != "8.8.8.8" || ipMap != "8.8.8.8" || nameToIP["google-public-dns-a.google.com"] != "8.8.8.8" {
 		t.Error("expected IP address to equal 8.8.8.8.  Has DNS changed?", ipResolve, ipMap)
 	}
-	if getIP(nil, &bogus) != "" {
+	if getIP("", bogus) != "" {
 		t.Error("expected no IP address returned for bogus address")
 	}
 }
@@ -67,8 +65,7 @@ func TestGetIpBogusName(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	fqdn := "12345"
-	ip := getIP(nil, &fqdn)
+	ip := getIP("", "12345")
 	if ip != "" {
 		t.Fatal("expected empty ip", ip)
 	}
@@ -108,8 +105,7 @@ func TestGetDkimValueNotFound(t *testing.T) {
 }
 
 func TestDomainToString(t *testing.T) {
-	ipAddress := "123.45.67.89"
-	d := &domain{Name: "example.com", ARecords: []aRecord{aRecord{Name: "", IPAddress: &ipAddress}}, NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}
+	d := &domain{Name: "example.com", ARecords: []aRecord{aRecord{Name: "", IPAddress: "123.45.67.89"}}, NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}
 	d.BuildDNSRecords("bogus", "bogus")
 	expected := `
 $ORIGIN example.com.
@@ -131,8 +127,7 @@ _dmarc.example.com.		IN	TXT	"v=DMARC1; p=quarantine"
 }
 
 func TestWriteDomain(t *testing.T) {
-	ipAddress := "123.45.67.89"
-	d := &domain{Name: "example.com", ARecords: []aRecord{aRecord{Name: "", IPAddress: &ipAddress}}, NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}
+	d := &domain{Name: "example.com", ARecords: []aRecord{aRecord{Name: "", IPAddress: "123.45.67.89"}}, NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}
 	d.BuildDNSRecords("bogus", "bogus")
 
 	os.Remove("example.com.txt")
