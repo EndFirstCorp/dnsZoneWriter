@@ -31,7 +31,7 @@ func TestAdd(t *testing.T) {
 
 func TestAddDomain(t *testing.T) {
 	d := &domain{}
-	ipAddress := "50.43.43.48"
+	ipAddress := "123.45.67.88"
 	d.AddDomain("name", &ipAddress, nil)
 	if len(d.DNSRecords) != 3 || d.DNSRecords[0].RecordType != "A" ||
 		d.DNSRecords[1].Data != "\"v=spf1  -all\"" || d.DNSRecords[2].Data != "\"v=DMARC1; p=reject\"" {
