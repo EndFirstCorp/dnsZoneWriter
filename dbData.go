@@ -73,7 +73,7 @@ type code struct {
 
 func (d *db) CreateSchema() error {
 	data := code{}
-	err := d.Db.QueryStructRow("Select 1 as Code from information_schema.tables where table_schema = 'public' and table_name = 'domains'", &data)
+	err := d.Db.QueryStructRow(onedb.NewSqlQuery("Select 1 as Code from information_schema.tables where table_schema = 'public' and table_name = 'domains'"), &data)
 	if err != nil && err.Error() != "no rows in result set" {
 		return err
 	}
@@ -110,7 +110,7 @@ func (d *db) GetDomains() ([]domain, error) {
 		return domains, err
 	}
 
-	err = d.Db.QueryStruct("select Id, Name from Domains", &domains)
+	err = d.Db.QueryStruct(onedb.NewSqlQuery("select Id, Name from Domains"), &domains)
 	if err != nil {
 		return domains, err
 	}
@@ -142,20 +142,20 @@ func (d *db) GetDomains() ([]domain, error) {
 
 func (d *db) getARecords() ([]aRecord, error) {
 	aRecords := []aRecord{}
-	return aRecords, d.Db.QueryStruct("select DomainId, Name, IpAddress, DynamicFqdn from ARecords", &aRecords)
+	return aRecords, d.Db.QueryStruct(onedb.NewSqlQuery("select DomainId, Name, IpAddress, DynamicFqdn from ARecords"), &aRecords)
 }
 
 func (d *db) getMxRecords() ([]mxRecord, error) {
 	mxRecords := []mxRecord{}
-	return mxRecords, d.Db.QueryStruct("select DomainId, Name, Priority from MxRecords", &mxRecords)
+	return mxRecords, d.Db.QueryStruct(onedb.NewSqlQuery("select DomainId, Name, Priority from MxRecords"), &mxRecords)
 }
 
 func (d *db) getNsRecords() ([]nsRecord, error) {
 	nsRecords := []nsRecord{}
-	return nsRecords, d.Db.QueryStruct("select DomainId, Name, SortOrder from NsRecords", &nsRecords)
+	return nsRecords, d.Db.QueryStruct(onedb.NewSqlQuery("select DomainId, Name, SortOrder from NsRecords"), &nsRecords)
 }
 
 func (d *db) getCNameRecords() ([]cnameRecord, error) {
 	cnameRecords := []cnameRecord{}
-	return cnameRecords, d.Db.QueryStruct("select DomainId, Name, CanonicalName from CNameRecords", &cnameRecords)
+	return cnameRecords, d.Db.QueryStruct(onedb.NewSqlQuery("select DomainId, Name, CanonicalName from CNameRecords"), &cnameRecords)
 }
