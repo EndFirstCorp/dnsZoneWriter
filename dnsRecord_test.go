@@ -75,6 +75,13 @@ func TestNewDmarcRecord(t *testing.T) {
 	}
 }
 
+func TestNewCNameRecord(t *testing.T) {
+	actual := newCNameRecord("name", "canonicalName")
+	if actual.Name != "name" || actual.RecordType != "CNAME" || actual.Data != "canonicalName" {
+		t.Fatal("expected CNAME record", actual)
+	}
+}
+
 func TestToString(t *testing.T) {
 	actual := newDNSRecord("name", "type", "data").toString()
 	if actual != "name\t\tIN\ttype\tdata\n" {

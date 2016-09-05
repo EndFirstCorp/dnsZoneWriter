@@ -50,6 +50,9 @@ func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath stri
 	for _, server := range d.ARecords {
 		d.AddDomain(server.Name, server.IPAddress, server.DynamicFQDN)
 	}
+	for _, cname := range d.CNameRecords {
+		d.Add(newCNameRecord(cname.Name, cname.CanonicalName))
+	}
 	return nil
 }
 

@@ -33,3 +33,11 @@ SortOrder                 SMALLINT        NOT NULL,
 CONSTRAINT PK_NsRecords PRIMARY KEY (DomainId,Name),
 CONSTRAINT FK_NsRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
 );
+
+CREATE TABLE CNameRecords (
+DomainId                  SMALLINT        NOT NULL,
+Name                      VARCHAR(50)     NOT NULL,
+CanonicalName             VARCHAR(255)    NULL,
+CONSTRAINT PK_CNameRecords PRIMARY KEY (DomainId,Name),
+CONSTRAINT FK_CNameRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
+);

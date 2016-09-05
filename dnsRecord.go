@@ -79,6 +79,10 @@ func newDmarcRecord(name string, policy string) *dnsRecord {
 	return newDNSRecord(recordName, "TXT", "\"v=DMARC1; p="+policy+"\"")
 }
 
+func newCNameRecord(name, canonicalName string) *dnsRecord {
+	return newDNSRecord(name, "CNAME", canonicalName)
+}
+
 func (r *dnsRecord) toString() string {
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\n", r.Name, r.TTL, r.Class, r.RecordType, r.Data)
 }

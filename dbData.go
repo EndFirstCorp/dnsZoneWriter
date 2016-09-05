@@ -27,15 +27,22 @@ type nsRecord struct {
 	SortOrder int16
 }
 
+type cnameRecord struct {
+	DomainID      int16
+	Name          string
+	CanonicalName string
+}
+
 type domain struct {
-	ID         int16
-	Name       string
-	DefaultTTL time.Duration
-	IPAddress  string
-	ARecords   []aRecord
-	MxRecords  []mxRecord
-	NsRecords  []nsRecord
-	DNSRecords []dnsRecord
+	ID           int16
+	Name         string
+	DefaultTTL   time.Duration
+	IPAddress    string
+	ARecords     []aRecord
+	MxRecords    []mxRecord
+	NsRecords    []nsRecord
+	DNSRecords   []dnsRecord
+	CNameRecords []cnameRecord
 }
 
 type dnsBackend interface {
@@ -99,6 +106,10 @@ func (d *db) GetDomains() ([]domain, error) {
 	if err != nil {
 		return domains, err
 	}
+	cnameRecords, err := d.getCNameRecords()
+	if err != nil {
+		return domains, err
+	}
 
 	err = d.Db.QueryStruct("select Id, Name, IpAddress from Domains", &domains)
 	if err != nil {
@@ -121,6 +132,11 @@ func (d *db) GetDomains() ([]domain, error) {
 				domains[i].ARecords = append(domains[i].ARecords, aRecord)
 			}
 		}
+		for _, cnameRecord := range cnameRecords {
+			if cnameRecord.DomainID == domains[i].ID {
+				domains[i].CNameRecords = append(domains[i].CNameRecords, cnameRecord)
+			}
+		}
 	}
 	return domains, nil
 }
@@ -138,4 +154,9 @@ func (d *db) getMxRecords() ([]mxRecord, error) {
 func (d *db) getNsRecords() ([]nsRecord, error) {
 	nsRecords := []nsRecord{}
 	return nsRecords, d.Db.QueryStruct("select DomainId, Name, SortOrder from NsRecords", &nsRecords)
+}
+
+func (d *db) getCNameRecords() ([]cnameRecord, error) {
+	cnameRecords := []cnameRecord{}
+	return cnameRecords, d.Db.QueryStruct("select DomainId, Name, CanonicalName from CNameRecords", &cnameRecords)
 }

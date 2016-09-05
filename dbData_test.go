@@ -52,42 +52,51 @@ func TestGetDomains(t *testing.T) {
 	aRecords := []aRecord{aRecord{Name: "arecord", DomainID: 1}, aRecord{Name: "arecord2", DomainID: 2}}
 	mxRecords := []mxRecord{mxRecord{Name: "mxrecord", DomainID: 1}, mxRecord{Name: "mxrecord2", DomainID: 2}}
 	nsRecords := []nsRecord{nsRecord{Name: "nsrecord", DomainID: 1}, nsRecord{Name: "nsrecord2", DomainID: 2}}
+	cnameRecords := []cnameRecord{cnameRecord{Name: "cname1", DomainID: 1}, cnameRecord{Name: "cname2", DomainID: 2}}
 	domainRecords := []domain{domain{Name: "domain", ID: 1}, domain{Name: "domain2", ID: 2}}
 	// fail on getARecords
 	d := db{Db: onedb.NewMock(nil, nil)}
 	_, err := d.GetDomains()
 	if err == nil {
-		t.Error("expected error since there's no data in the Mock reader")
+		t.Error("expected error since there's no A Records in the Mock reader")
 	}
 
 	// fail on getMxRecords
 	d = db{Db: onedb.NewMock(nil, nil, aRecords)}
 	_, err = d.GetDomains()
 	if err == nil {
-		t.Error("expected error since there's only one dataset in the Mock reader")
+		t.Error("expected error since there's no MX Records in the Mock reader")
 	}
 
 	// fail on getNsRecords
 	d = db{Db: onedb.NewMock(nil, nil, aRecords, mxRecords)}
 	_, err = d.GetDomains()
 	if err == nil {
-		t.Error("expected error since there's only one dataset in the Mock reader")
+		t.Error("expected error since there's no NS Records in the Mock reader")
 	}
 
-	// fail on get domains
+	// fail on getCNameRecords
 	d = db{Db: onedb.NewMock(nil, nil, aRecords, mxRecords, nsRecords)}
 	_, err = d.GetDomains()
 	if err == nil {
-		t.Error("expected error since there's only one dataset in the Mock reader")
+		t.Error("expected error since there's no CNames in the Mock reader")
 	}
 
-	d = db{Db: onedb.NewMock(nil, nil, aRecords, mxRecords, nsRecords, domainRecords)}
+	// fail on get domains
+	d = db{Db: onedb.NewMock(nil, nil, aRecords, mxRecords, nsRecords, cnameRecords)}
+	_, err = d.GetDomains()
+	if err == nil {
+		t.Error("expected error since there's no domains in the Mock reader")
+	}
+
+	d = db{Db: onedb.NewMock(nil, nil, aRecords, mxRecords, nsRecords, cnameRecords, domainRecords)}
 	domains, _ := d.GetDomains()
 	if len(domains) != 2 || domains[0].Name != "domain" || domains[1].Name != "domain2" ||
 		len(domains[1].ARecords) != 1 || len(domains[0].ARecords) != 1 || domains[0].ARecords[0].Name != "arecord" || domains[1].ARecords[0].Name != "arecord2" ||
 		len(domains[1].MxRecords) != 1 || len(domains[0].MxRecords) != 1 || domains[0].MxRecords[0].Name != "mxrecord" || domains[1].MxRecords[0].Name != "mxrecord2" ||
-		len(domains[1].NsRecords) != 1 || len(domains[0].NsRecords) != 1 || domains[0].NsRecords[0].Name != "nsrecord" || domains[1].NsRecords[0].Name != "nsrecord2" {
-		t.Error("expected 2 domains with correct A, MX and NS records", domains)
+		len(domains[1].NsRecords) != 1 || len(domains[0].NsRecords) != 1 || domains[0].NsRecords[0].Name != "nsrecord" || domains[1].NsRecords[0].Name != "nsrecord2" ||
+		len(domains[1].CNameRecords) != 1 || len(domains[0].CNameRecords) != 1 || domains[0].CNameRecords[0].Name != "cname1" || domains[1].CNameRecords[0].Name != "cname2" {
+		t.Error("expected 2 domains with correct A, MX, NS and CName records", domains)
 	}
 
 	_, err = d.GetDomains()
