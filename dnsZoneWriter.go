@@ -135,7 +135,7 @@ func (w *dnsZoneWriter) WriteZones(zones []domain) (bool, error) {
 }
 
 func (w *dnsZoneWriter) WriteZoneConfig(zones []domain, password string) error {
-	config := fmt.Sprintf(`key:\n  name: "sec_key"\n  algorithm: hmac-sha256\n  secret: "%s"`, password)
+	config := fmt.Sprintf("key:\n  name: \"sec_key\"\n  algorithm: hmac-sha256\n  secret: \"%s\"", password)
 
 	for _, zone := range zones {
 		config += fmt.Sprintf("\n\nzone:\n  name: %s\n  zonefile: %s\n\n", zone.Name, zone.Name+".txt.signed")
