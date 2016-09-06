@@ -67,19 +67,19 @@ func newDb(host string, dbPort string, user string, password string, database st
 	return &db{conn}, nil
 }
 
-type code struct {
-	Code int
+type exists struct {
+	Found string
 }
 
 func (d *db) CreateSchema() error {
-	data := code{}
-	err := d.Db.QueryStructRow(onedb.NewSqlQuery("Select 1 as Code from information_schema.tables where table_schema = 'public' and table_name = 'domains'"), &data)
+	item := exists{}
+	err := d.Db.QueryStructRow(onedb.NewSqlQuery("Select '1' as Found from information_schema.tables where table_schema = 'public' and table_name = 'domains'"), &item)
 	if err != nil && err.Error() != "no rows in result set" {
 		return err
 	}
 
 	// schema already exists... exit
-	if data.Code == 1 {
+	if item.Found == "1" {
 		return nil
 	}
 

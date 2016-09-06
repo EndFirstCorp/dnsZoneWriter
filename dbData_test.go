@@ -26,14 +26,14 @@ func TestCreateSchema(t *testing.T) {
 	}
 
 	// schema exists
-	d = db{Db: onedb.NewMock(nil, nil, code{1})}
+	d = db{Db: onedb.NewMock(nil, nil, exists{"1"})}
 	err = d.CreateSchema()
 	if err != nil {
 		t.Error("expected success since schema already exists")
 	}
 
 	// failed execute
-	reader := onedb.NewMock(nil, errors.New("fail"), code{0})
+	reader := onedb.NewMock(nil, errors.New("fail"), exists{})
 	d = db{Db: reader}
 	err = d.CreateSchema()
 	if err == nil {
@@ -41,7 +41,7 @@ func TestCreateSchema(t *testing.T) {
 	}
 
 	// successful create
-	d = db{Db: onedb.NewMock(nil, nil, code{0})}
+	d = db{Db: onedb.NewMock(nil, nil, exists{})}
 	err = d.CreateSchema()
 	if err != nil {
 		t.Error("expected success creating schema", err)
