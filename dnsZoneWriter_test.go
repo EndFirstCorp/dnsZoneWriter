@@ -88,7 +88,7 @@ func TestGetZones(t *testing.T) {
 	domains := []domain{domain{Name: "example.com", NsRecords: []nsRecord{nsRecord{}}}}
 	db = &mockBackend{domains: domains}
 	actual, err := w.GetZones(db)
-	if err != nil || len(actual) != 1 {
+	if err != nil || len(actual) != 1 || len(actual[0].DNSRecords) == 0 {
 		t.Error("expected success", err, actual, domains)
 	}
 }

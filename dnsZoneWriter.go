@@ -93,8 +93,8 @@ func (w *dnsZoneWriter) GetZones(db dnsBackend) ([]domain, error) {
 		return nil, errors.New("Unable to retrieve domains from database " + err.Error())
 	}
 
-	for _, domain := range domains {
-		if err := domain.BuildDNSRecords(w.DKIMKeyFilePath, w.TLSPublicKeyPath); err != nil {
+	for i := range domains {
+		if err := domains[i].BuildDNSRecords(w.DKIMKeyFilePath, w.TLSPublicKeyPath); err != nil {
 			return nil, err
 		}
 	}
