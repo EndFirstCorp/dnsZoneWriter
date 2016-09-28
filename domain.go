@@ -143,16 +143,22 @@ func (d *domain) String(serialNumber string) string {
 
 func (d *domain) WriteZone(folder string) (bool, error) {
 	filename := filepath.Join(folder, d.Name+".txt")
-	currentZone, currentSerialNumber, err := loadZoneFile(filename)
+	currentZone, currentSerialNumber := getFileMatch(filename, `SOA.*\((\d*)`)
+
+	_, expiration := getFileMatch(filename+".signed", `\sRRSIG\s+SOA\s+\d+\s+\d+\s\d+\s+(\d{14})`)
+	expireDate, err := time.Parse("20060102000000", expiration)
 	if err != nil {
-		return false, err
+		expireDate = time.Now()
 	}
 
 	newSerialNumber := time.Now().Format("2006010200")
-	if currentZone == "" || currentZone != d.String(currentSerialNumber) {
+	if currentZone == "" || currentZone != d.String(currentSerialNumber) || expireDate.AddDate(0, 0, -3).Before(time.Now()) {
 		newSerialNumber = getSerialNumberRevision(currentSerialNumber, newSerialNumber)
 
-		ioutil.WriteFile(filename, []byte(d.String(newSerialNumber)), 644)
+		err := ioutil.WriteFile(filename, []byte(d.String(newSerialNumber)), 644)
+		if err != nil {
+			return false, err
+		}
 		return true, nil
 	}
 	return false, nil
@@ -172,21 +178,19 @@ func (d *domain) SignZone(zoneDir string, keyDir string, signingAlgorithm string
 	return nil
 }
 
-func loadZoneFile(filename string) (zoneData string, serialNumber string, err error) {
+func getFileMatch(filename string, regex string) (fileText string, match string) {
 	var fileData []byte
-	if _, err := os.Stat(filename); !os.IsNotExist(err) {
-		fileData, err = ioutil.ReadFile(filename)
-		if err != nil {
-			return "", "", fmt.Errorf("Error: unable to read %s to compare with new DNS data. %s\n", filename, err.Error())
-		}
+	fileData, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "", ""
 	}
-	zoneData = string(fileData)
-	re := regexp.MustCompile(`SOA.*\((\d*)`)
-	submatches := re.FindStringSubmatch(zoneData)
+	fileText = string(fileData)
+	re := regexp.MustCompile(regex)
+	submatches := re.FindStringSubmatch(fileText)
 	if len(submatches) < 2 {
-		return zoneData, "", nil
+		return "", ""
 	}
-	return zoneData, submatches[1], nil
+	return fileText, submatches[1]
 }
 
 func getSerialNumberRevision(currentSerialNumber string, newSerialNumber string) string {

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestBuildDnsRecords(t *testing.T) {
@@ -126,13 +128,32 @@ _dmarc.example.com.		IN	TXT	"v=DMARC1; p=quarantine"
 	}
 }
 
-func TestWriteDomain(t *testing.T) {
+func TestWriteZone(t *testing.T) {
 	d := &domain{Name: "example.com", ARecords: []aRecord{aRecord{Name: "", IPAddress: "123.45.67.89"}}, NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}
 	d.BuildDNSRecords("bogus", "bogus")
 
-	os.Remove("example.com.txt")
-	d.WriteZone("testData") // create file
+	os.Remove("testData/example.com.txt")
+	os.Remove("testData/example.com.txt.signed")
+
+	d.WriteZone("testData") // create file. not signed
+	_, sn := getFileMatch("testData/example.com.txt", `SOA.*\((\d*)`)
+	if sn != time.Now().Format("2006010200") {
+		t.Error("expected serial number expiration date to be")
+	}
+
+	writeSigned("example.com", time.Now().AddDate(0, 1, 0).Format("20060102000000"))
 	d.WriteZone("testData") // no update
+	_, sn1 := getFileMatch("testData/example.com.txt", `SOA.*\((\d*)`)
+	if sn != sn1 {
+		t.Error("expected serial number to stay the same")
+	}
+
+	writeSigned("example.com", time.Now().AddDate(0, 0, 1).Format("20060102000000"))
+	d.WriteZone("testData") // signature is old, so write
+	_, sn2 := getFileMatch("testData/example.com.txt", `SOA.*\((\d*)`)
+	if sn2 != getSerialNumberRevision(sn1, sn1) {
+		t.Error("expected new revision to be created due to expiration")
+	}
 }
 
 func TestSignZone(t *testing.T) {
@@ -155,4 +176,9 @@ func TestGetSerialNumberRevision(t *testing.T) {
 	if actual != "2016010101" {
 		t.Fatal("expected serial number to increment")
 	}
+}
+
+func writeSigned(domain string, expiration string) {
+	data := `example.com. 1800  IN  RRSIG SOA 8 2 1800 ` + expiration + ` 20160921090003 27633 example.com. xjGi+bWLxqHthk3cNVy7jA8XXFA5V7l8FWhGsTLdOC+h3vWazbyDzFdMEuS2OIghZHOcKDCQQ2rnlKFFZn8lHtktQhG0V4u9nji8s4BjqTlqe+DcRxeWTckSOazn2twVgOhGbD/eqlY4xDn8k5GZJd2KkaW+XeXQdRDERukv`
+	ioutil.WriteFile("testData/"+domain+".txt.signed", []byte(data), 644)
 }
