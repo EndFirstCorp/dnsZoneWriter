@@ -1,10 +1,14 @@
 language: go
 go:
 - tip
+script:
+  - go build ./...
 deploy:
   provider: releases
   api_key:
     secure: NbSRHySsDxlVuGpNafRahkSJdAAO+OTYFNVn9eYqRZfF5A1SIAALRTm+dlvhcRXVmts281iVRM2BeLoQ8s95R/1p4czUgmhLMBIZCNoK4BVHcBhogrRATo7NsNBdnTGovowjWvhESVYwNwj64AFXDpjdHi4MGBj1OfoYoSwZQJvnpKoCTfRlChVAiGGkO9AmaVK7fL/wo7LyrHRiunmU7mW4bSeeF5CMVPU8SuhGBwxRYJitsO+bsYZM/fOOj4gYnT+s99PeH+WjPBWFuHu5rO7C9HTxrZqyJaj/yCnrOo2mLGZXTzrKDETGbaLkxV4xm2Kl5tnLRDOAh4StgAHb46jrZJhX/50hwXcyVauhqzA7vPwIJGVR6lU04jXkIUnsqojVenG13EJc0onTqj46GjyKq5APPoHeSh+gZAoC+TOHIvG2fDPww8Bn03J12Z0+wS0htRPHb0kHqqIMWWmu6wn3D/MIw/oAWAQAjWf+NbKx9Rxzm15qEit12/FULNPwAls//w9UQSsa1r7BrpcpgsM0EtV45pDlNEsA5zwjbz8u8tr3jOA7kIsiT/Y/cbPQgQGdN1rI2+qVX3r8huUCFHgDudxZhReNGrsAhVUvpFwH6jjNFpK1LrKfb1R05oNp5ajdx09Wd5yKUCk1jJ33dWJqfZFtIKenpzvI7cCL9mA=
   file: dnsZoneWriter
+  skip_cleanup: true
   on:
+    # tags: true
     repo: robarchibald/dnsZoneWriter
