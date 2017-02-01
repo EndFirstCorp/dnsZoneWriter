@@ -133,9 +133,9 @@ func TestWriteAll(t *testing.T) {
 	}
 }
 
-func TestRestartNsdServer(t *testing.T) {
+func TestReloadNsdServer(t *testing.T) {
 	command.SetMock(&command.MockShellCmd{})
-	err := restartNsdServer()
+	err := reloadNsdServer()
 	if err != nil {
 		t.Error("expected success")
 	}

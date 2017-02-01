@@ -11,6 +11,7 @@ import (
 
 	"github.com/robarchibald/command"
 	"github.com/robarchibald/configReader"
+	"time"
 )
 
 type dnsZoneWriter struct {
@@ -112,7 +113,8 @@ func (w *dnsZoneWriter) WriteAll(zones []domain) error {
 			return err
 		}
 		if w.IsMaster {
-			return restartNsdServer()
+			time.Sleep(time.Second) // wait 1 second so config files can finish closing
+			return reloadNsdServer()
 		}
 	}
 	return nil
@@ -147,10 +149,10 @@ func (w *dnsZoneWriter) WriteZoneConfig(zones []domain, password string) error {
 	return ioutil.WriteFile(filepath.Join(w.NsdDir, "zones.conf"), []byte(config), 640)
 }
 
-func restartNsdServer() error {
-	output, err := command.Command("/usr/sbin/service", "nsd", "restart").CombinedOutput()
+func reloadNsdServer() error {
+	output, err := command.Command("/usr/sbin/service", "nsd", "reload").CombinedOutput()
 	if err != nil {
-		return errors.New("Unable to restart NSD server " + err.Error() + ". " + string(output))
+		return errors.New("Unable to reload NSD server " + err.Error() + ". " + string(output))
 	}
 	return nil
 }
