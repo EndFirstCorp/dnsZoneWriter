@@ -11,6 +11,7 @@ import (
 
 	"github.com/robarchibald/command"
 	"github.com/robarchibald/configReader"
+	"path"
 	"time"
 )
 
@@ -23,7 +24,7 @@ type dnsZoneWriter struct {
 	NsdDir            string
 	ZoneFileDirectory string
 	ZonePassword      string
-	DKIMKeyFilePath   string
+	DKIMKeysPath      string
 	TLSPublicKeyPath  string
 	DNSMasterIP       string
 	DNSSlaveIPs       string
@@ -94,7 +95,7 @@ func (w *dnsZoneWriter) GetZones(db dnsBackend) ([]domain, error) {
 	}
 
 	for i := range domains {
-		if err := domains[i].BuildDNSRecords(w.DKIMKeyFilePath, w.TLSPublicKeyPath); err != nil {
+		if err := domains[i].BuildDNSRecords(path.Join(w.DKIMKeysPath, domains[i].Name, "mail.txt"), w.TLSPublicKeyPath); err != nil {
 			return nil, err
 		}
 	}

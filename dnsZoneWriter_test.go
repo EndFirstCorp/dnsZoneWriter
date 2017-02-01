@@ -46,7 +46,7 @@ func TestUpdateZoneDate(t *testing.T) {
 	}
 
 	db = &mockBackend{domains: []domain{domain{Name: "example1.com", NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}}}
-	w = &dnsZoneWriter{ZoneFileDirectory: "testData", NsdDir: "testData"}
+	w = &dnsZoneWriter{ZoneFileDirectory: "testData", NsdDir: "testData", DKIMKeysPath: "testData"}
 	err = w.UpdateZoneData(db)
 	if err != nil {
 		t.Error("expected success", err)
@@ -104,7 +104,7 @@ func TestWriteAll(t *testing.T) {
 		t.Error("expected failure due to NSD restart")
 	}
 
-	// success
+	// success - not master
 	os.Remove("testData/example3.com.txt")
 	zones = []domain{domain{Name: "example3.com"}}
 	w = &dnsZoneWriter{ZoneFileDirectory: "testData", NsdDir: "testData"}
