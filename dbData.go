@@ -33,6 +33,18 @@ type cnameRecord struct {
 	CanonicalName string
 }
 
+type spfRecord struct {
+	DomainID    int16
+	Name        string
+	AllowFilter string
+}
+
+type dkimRecord struct {
+	DomainID    int16
+	Name        string
+	AllowFilter string
+}
+
 type domain struct {
 	ID           int16
 	Name         string
@@ -42,6 +54,8 @@ type domain struct {
 	NsRecords    []nsRecord
 	DNSRecords   []dnsRecord
 	CNameRecords []cnameRecord
+	SPFRecords   []spfRecord
+	DKIMRecords  []dkimRecord
 }
 
 type dnsBackend interface {

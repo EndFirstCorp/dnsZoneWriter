@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"github.com/robarchibald/command"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -33,7 +35,7 @@ func TestAdd(t *testing.T) {
 
 func TestAddDomain(t *testing.T) {
 	d := &domain{}
-	d.AddDomain("name", "123.45.67.89", "")
+	d.AddDomain("name", "123.45.67.89", "", true)
 	if len(d.DNSRecords) != 3 || d.DNSRecords[0].RecordType != "A" ||
 		d.DNSRecords[1].Data != "\"v=spf1  -all\"" || d.DNSRecords[2].Data != "\"v=DMARC1; p=reject\"" {
 		t.Fatal("expected to have added A record, SPF record and DMARC record", d.DNSRecords)
@@ -42,7 +44,7 @@ func TestAddDomain(t *testing.T) {
 
 func TestAddDomainDynamicMx(t *testing.T) {
 	d := &domain{MxRecords: []mxRecord{mxRecord{1, "name", 5}}}
-	d.AddDomain("name", "", "google-public-dns-a.google.com")
+	d.AddDomain("name", "", "google-public-dns-a.google.com", true)
 	if len(d.DNSRecords) != 3 || d.DNSRecords[0].RecordType != "A" ||
 		d.DNSRecords[1].Data != "\"v=spf1 ip4:8.8.8.8 -all\"" || d.DNSRecords[2].Data != "\"v=DMARC1; p=quarantine\"" {
 		t.Fatal("expected to have added A record, SPF record and DMARC record", d.DNSRecords)
@@ -74,7 +76,7 @@ func TestGetIpBogusName(t *testing.T) {
 }
 
 func TestGetTlsaKey(t *testing.T) {
-	shell = &commandHelper{}
+	command.SetExec()
 	key := getTlsaKey("testData/ssl_certificate.pem")
 	if key != "111006378afbe8e99bb02ba87390ca429fca2773f74d7f7eb5744f5ddf68014b" {
 		t.Fatal("expected valid sha256 hash of the ssl certificate", key)
@@ -157,14 +159,14 @@ func TestWriteZone(t *testing.T) {
 }
 
 func TestSignZone(t *testing.T) {
-	shell = &mockCommander{}
+	command.SetMock(&command.MockShellCmd{})
 	d := &domain{Name: "example.com", NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}
 	err := d.SignZone("testData", "testData", "ALG")
 	if err != nil {
 		t.Error("expected success", err)
 	}
 
-	shell = &mockErrCommander{}
+	command.SetMock(&command.MockShellCmd{CombinedOutputErr: fmt.Errorf("fail")})
 	err = d.SignZone("testData", "testData", "ALG")
 	if err == nil {
 		t.Error("expected failure")

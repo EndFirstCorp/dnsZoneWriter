@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/robarchibald/command"
 	"io/ioutil"
 	"net"
 	"os"
@@ -24,6 +25,9 @@ const hostmaster string = "hostmaster"
 var nameToIP = make(map[string]string)
 
 func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath string) error {
+	hasSpf := make(map[string]bool)
+	hasDkim := make(map[string]bool)
+	hasA := make(map[string]bool)
 	d.DefaultTTL = defaultTTL
 	dkimValue := getDkimValue(dkimKeyFilePath)
 	tlsaKey := getTlsaKey(sslCertificatePath)
@@ -46,8 +50,17 @@ func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath stri
 			d.Add(newDkimRecord(mailServer.Name, dkimValue))
 		}
 	}
+	for _, spf := range d.SPFRecords {
+		d.Add(newSpfRecord(spf.Name, spf.AllowFilter))
+		hasSpf[spf.Name] = true
+	}
+	for _, dkim := range d.DKIMRecords {
+		d.Add(newDkimRecord(dkim.Name, dkimValue))
+		hasDkim[dkim.Name] = true
+	}
 	for _, server := range d.ARecords {
-		d.AddDomain(server.Name, server.IPAddress, server.DynamicFQDN)
+		d.AddDomain(server.Name, server.IPAddress, server.DynamicFQDN, !hasA[server.Name])
+		hasA[server.Name] = true
 	}
 	for _, cname := range d.CNameRecords {
 		d.Add(newCNameRecord(cname.Name, cname.CanonicalName))
@@ -59,7 +72,7 @@ func (d *domain) Add(record *dnsRecord) {
 	d.DNSRecords = append(d.DNSRecords, *record)
 }
 
-func (d *domain) AddDomain(name, ipAddress, dynamicFqdn string) {
+func (d *domain) AddDomain(name, ipAddress, dynamicFqdn string, isFirst bool) {
 	ip := getIP(ipAddress, dynamicFqdn)
 	var spfAllow, dmarcPolicy string
 	if name == "" { // apex domain, allow mx servers to send
@@ -72,15 +85,17 @@ func (d *domain) AddDomain(name, ipAddress, dynamicFqdn string) {
 	} else { // all else, reject
 		dmarcPolicy = "reject"
 	}
-	d.AddDomainRecords(name, ip, spfAllow, dmarcPolicy)
+	d.AddDomainRecords(name, ip, spfAllow, dmarcPolicy, isFirst)
 }
 
-func (d *domain) AddDomainRecords(name string, ipAddress string, spfAllow string, dmarcPolicy string) {
+func (d *domain) AddDomainRecords(name, ipAddress, spfAllow, dmarcPolicy string, isFirst bool) {
 	if ipAddress != "" {
 		d.Add(newARecord(name, ipAddress))
 	}
-	d.Add(newSpfRecord(name, spfAllow))
-	d.Add(newDmarcRecord(name, dmarcPolicy))
+	if isFirst {
+		d.Add(newSpfRecord(name, spfAllow))
+		d.Add(newDmarcRecord(name, dmarcPolicy))
+	}
 }
 
 func isMx(name string, mailServers []mxRecord) bool {
@@ -114,9 +129,9 @@ func getTlsaKey(filePath string) string {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return "TLSA_KEY_FILE_NOT_FOUND_AT_" + filePath
 	}
-	c1 := shell.Command("openssl", "x509", "-in", filePath, "-outform", "DER")
-	c2 := shell.Command("openssl", "dgst", "-sha256")
-	return shell.PipeCommands(c1, c2)
+	c1 := command.Command("openssl", "x509", "-in", filePath, "-outform", "DER")
+	c2 := command.Command("openssl", "dgst", "-sha256")
+	return command.PipeCommands(c1, c2)
 }
 
 func getDkimValue(filePath string) string {
@@ -170,7 +185,7 @@ func (d *domain) SignZone(zoneDir string, keyDir string, signingAlgorithm string
 	if err != nil {
 		return err
 	}
-	cmd := shell.Command("/usr/bin/ldns-signzone", "-e", date, "-n", filepath.Join(zoneDir, d.Name+".txt"), kskFile, zskFile)
+	cmd := command.Command("/usr/bin/ldns-signzone", "-e", date, "-n", filepath.Join(zoneDir, d.Name+".txt"), kskFile, zskFile)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.New("Error signing zone: " + err.Error() + " " + string(output))

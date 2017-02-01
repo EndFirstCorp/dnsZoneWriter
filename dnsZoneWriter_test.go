@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"github.com/robarchibald/command"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -133,7 +134,7 @@ func TestWriteAll(t *testing.T) {
 }
 
 func TestRestartNsdServer(t *testing.T) {
-	shell = &mockCommander{}
+	command.SetMock(&command.MockShellCmd{})
 	err := restartNsdServer()
 	if err != nil {
 		t.Error("expected success")
@@ -141,13 +142,12 @@ func TestRestartNsdServer(t *testing.T) {
 }
 
 func TestGetSigningKeyPrefixes(t *testing.T) {
-	shell = &mockCommander{Return: "keygenOutput"}
+	command.SetMock(&command.MockShellCmd{OutputVal: []byte("keygenOutput")})
 	ksk, zsk, err := getSigningKeyPrefixes("example.com", "ALG", "testData")
 	if err != nil || !strings.HasSuffix(zsk, "example.com.ALG.ZSK") || !strings.HasSuffix(ksk, "example.com.ALG.KSK") {
 		t.Error("expected success", err, ksk, zsk)
 	}
 
-	shell = &mockCommander{Return: "keygenOutput"}
 	ksk, zsk, err = getSigningKeyPrefixes("example1.com", "ALG", "testData")
 	if err == nil {
 		t.Error("expected failure on create of ZSK files")
@@ -227,43 +227,4 @@ func (b *mockBackend) CreateSchema() error {
 
 func (b *mockBackend) GetDomains() ([]domain, error) {
 	return b.domains, b.getDomainsErr
-}
-
-type mockCommander struct {
-	Return string
-}
-
-func (c *mockCommander) Command(name string, arg ...string) runner {
-	return &MockCmdRunner{ByteReturn: []byte(c.Return)}
-}
-
-func (c *mockCommander) PipeCommands(r1 runner, r2 runner) string {
-	return c.Return
-}
-
-type mockErrCommander struct {
-}
-
-func (c *mockErrCommander) Command(name string, arg ...string) runner {
-	return &MockCmdRunner{ErrReturn: errors.New("fail")}
-}
-
-func (c *mockErrCommander) PipeCommands(r1 runner, r2 runner) string {
-	return ""
-}
-
-type MockCmdRunner struct {
-	ByteReturn []byte
-	ErrReturn  error
-}
-
-func (r *MockCmdRunner) CombinedOutput() ([]byte, error) {
-	return r.ByteReturn, r.ErrReturn
-}
-
-func (r *MockCmdRunner) Output() ([]byte, error) {
-	return r.ByteReturn, r.ErrReturn
-}
-
-func (r *MockCmdRunner) SetWorkingDir(path string) {
 }

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/robarchibald/command"
 	"github.com/robarchibald/configReader"
 )
 
@@ -29,8 +30,6 @@ type dnsZoneWriter struct {
 	DNSSecKeyDir      string
 	SigningAlgorithm  string
 }
-
-var shell commander = &commandHelper{}
 
 func main() {
 	w, err := newDNSZoneWriter("dnsZoneWriter.conf", &ipAddressHelper{})
@@ -149,7 +148,7 @@ func (w *dnsZoneWriter) WriteZoneConfig(zones []domain, password string) error {
 }
 
 func restartNsdServer() error {
-	output, err := shell.Command("/usr/sbin/service", "nsd", "restart").CombinedOutput()
+	output, err := command.Command("/usr/sbin/service", "nsd", "restart").CombinedOutput()
 	if err != nil {
 		return errors.New("Unable to restart NSD server " + err.Error() + ". " + string(output))
 	}
@@ -188,11 +187,11 @@ func keysExist(filePrefix string) bool {
 }
 
 func createSigningKeys(keyDir string, domain string, signingAlgorithm string, keyType string) error {
-	var cmd runner
+	var cmd command.Cmder
 	if keyType == "KSK" {
-		cmd = shell.Command("/usr/bin/ldns-keygen", "-a", signingAlgorithm, "-b", "2048", "-k", domain)
+		cmd = command.Command("/usr/bin/ldns-keygen", "-a", signingAlgorithm, "-b", "2048", "-k", domain)
 	} else {
-		cmd = shell.Command("/usr/bin/ldns-keygen", "-a", signingAlgorithm, "-b", "1024", domain)
+		cmd = command.Command("/usr/bin/ldns-keygen", "-a", signingAlgorithm, "-b", "1024", domain)
 	}
 	cmd.SetWorkingDir(keyDir)
 

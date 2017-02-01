@@ -40,3 +40,11 @@ CanonicalName             VARCHAR(255)    NULL,
 CONSTRAINT PK_CNameRecords PRIMARY KEY (DomainId,Name),
 CONSTRAINT FK_CNameRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
 );
+
+CREATE TABLE SPFRecords (
+DomainId                  SMALLINT        NOT NULL,
+Name                      VARCHAR(50)     NOT NULL,
+AllowFilter               VARCHAR(50)     NOT NULL,
+CONSTRAINT PK_SPFRecords PRIMARY KEY (DomainId,Name),
+CONSTRAINT FK_SPFRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
+);
