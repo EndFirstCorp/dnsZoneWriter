@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/robarchibald/command"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
@@ -209,9 +210,44 @@ func (d *domain) WriteZone(folder string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
+		fmt.Println("Updated: " + filename)
+		copyFileContents(filename, fmt.Sprintf("%s_%s", filename, time.Now().Format("20060102-150405")))
+		cleanup(filename+"_*", 336) // 2 weeks
 		return true, nil
 	}
 	return false, nil
+}
+
+func cleanup(searchglob string, hoursToKeep int) {
+	matches, _ := filepath.Glob(searchglob)
+	now := time.Now()
+	for _, file := range matches {
+		info, err := os.Stat(file)
+		if err == nil && now.Sub(info.ModTime()) > time.Hour*time.Duration(hoursToKeep) {
+			os.Remove(file)
+		}
+	}
+}
+
+func copyFileContents(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0400)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		cerr := out.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+	io.Copy(out, in)
+	err = out.Sync()
+	return err
 }
 
 func (d *domain) SignZone(zoneDir string, keyDir string, signingAlgorithm string) error {
