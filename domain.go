@@ -24,17 +24,32 @@ const hostmaster string = "hostmaster"
 
 var nameToIP = make(map[string]string)
 
+type domain struct {
+	ID           int16
+	Name         string
+	DefaultTTL   time.Duration
+	DNSRecords   []dnsRecord
+	ARecords     []aRecord
+	CNameRecords []cnameRecord
+	DKIMRecords  []dkimRecord
+	DMARCRecords []dmarcRecord
+	MxRecords    []mxRecord
+	NsRecords    []nsRecord
+	SPFRecords   []spfRecord
+	SRVRecords   []srvRecord
+	TXTRecords   []txtRecord
+	hasDMARC     map[string]bool
+	hasSPF       map[string]bool
+}
+
 func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath string) error {
-	hasSpf := make(map[string]bool)
-	hasDkim := make(map[string]bool)
-	hasA := make(map[string]bool)
+	d.hasDMARC = make(map[string]bool)
+	d.hasSPF = make(map[string]bool)
 	d.DefaultTTL = defaultTTL
 	dkimValue := getDkimValue(dkimKeyFilePath)
 	tlsaKey := getTlsaKey(sslCertificatePath)
 
-	if len(d.NsRecords) == 0 {
-		return errors.New("One or more NS records is required")
-	}
+	d.getDefaults()
 	d.Add(newSoaRecord(d.Name, d.NsRecords[0].Name, hostmaster, refresh, retry, expire, negativeTTL))
 	d.Add(newTlsaRecord(25, tlsaKey))
 	d.Add(newTlsaRecord(443, tlsaKey))
@@ -44,23 +59,26 @@ func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath stri
 		d.Add(newNsRecord(d.Name, nameServer.Name))
 	}
 	for _, mailServer := range d.MxRecords {
-		d.Add(newMxRecord(d.Name, mailServer.Name, mailServer.Priority))
-		// add dkim record if not a fqdn on a different domain
-		if !strings.HasSuffix(mailServer.Name, ".") || strings.Contains(mailServer.Name, d.Name+".") {
-			d.Add(newDkimRecord(mailServer.Name, dkimValue))
-		}
+		d.Add(newMxRecord(d.Name, mailServer.Name, mailServer.Value, mailServer.Priority))
 	}
 	for _, spf := range d.SPFRecords {
-		d.Add(newSpfRecord(spf.Name, spf.AllowFilter))
-		hasSpf[spf.Name] = true
+		d.AddSPFRecord(spf.Name, spf.Value)
 	}
 	for _, dkim := range d.DKIMRecords {
 		d.Add(newDkimRecord(dkim.Name, dkimValue))
-		hasDkim[dkim.Name] = true
 	}
+	for _, dmarc := range d.DMARCRecords {
+		d.AddDMARCRecord(dmarc.Name, dmarc.Value)
+	}
+
 	for _, server := range d.ARecords {
-		d.AddDomain(server.Name, server.IPAddress, server.DynamicFQDN, !hasA[server.Name])
-		hasA[server.Name] = true
+		name := server.Name
+		if server.Name == "" {
+			name = d.Name + "."
+		}
+		d.AddARecord(name, server.IPAddress, server.DynamicFQDN)
+		d.AddDMARCRecord(name, "reject") // reject if not specified earlier
+		d.AddSPFRecord(name, "")         // reject all mail
 	}
 	for _, cname := range d.CNameRecords {
 		d.Add(newCNameRecord(cname.Name, cname.CanonicalName))
@@ -68,43 +86,60 @@ func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath stri
 	return nil
 }
 
+func (d *domain) getDefaults() {
+	if len(d.NsRecords) == 0 {
+		d.NsRecords = getDefaultNs()
+	}
+	if len(d.MxRecords) == 0 {
+		d.MxRecords = getDefaultMx()
+	}
+	if len(d.SPFRecords) == 0 {
+		d.SPFRecords = getDefaultSPF(d.Name)
+	}
+	if len(d.DMARCRecords) == 0 {
+		d.DMARCRecords = getDefaultDMARC(d.Name)
+	}
+}
+
+func getDefaultMx() []mxRecord {
+	return []mxRecord{mxRecord{Name: "", Value: "mail1.endfirst.com.", Priority: 10}, mxRecord{Name: "", Value: "mail2.endfirst.com.", Priority: 20}}
+}
+
+func getDefaultNs() []nsRecord {
+	return []nsRecord{nsRecord{Name: "ns1.endfirst.com.", SortOrder: 1}, nsRecord{Name: "ns2.endfirst.com.", SortOrder: 1}}
+}
+
+func getDefaultSPF(domain string) []spfRecord {
+	return []spfRecord{spfRecord{Name: domain + ".", Value: "include:_spf.endfirst.com"}}
+}
+
+func getDefaultDMARC(domain string) []dmarcRecord {
+	return []dmarcRecord{dmarcRecord{Name: domain + ".", Value: "quarantine"}}
+}
+
 func (d *domain) Add(record *dnsRecord) {
 	d.DNSRecords = append(d.DNSRecords, *record)
 }
 
-func (d *domain) AddDomain(name, ipAddress, dynamicFqdn string, isFirst bool) {
+func (d *domain) AddARecord(name, ipAddress, dynamicFqdn string) {
 	ip := getIP(ipAddress, dynamicFqdn)
-	var spfAllow, dmarcPolicy string
-	if name == "" { // apex domain, allow mx servers to send
-		name = d.Name + "."
-		spfAllow = "mx"
-		dmarcPolicy = "quarantine"
-	} else if isMx(name, d.MxRecords) { // mx servers, allow this ip to send
-		spfAllow = "ip4:" + ip
-		dmarcPolicy = "quarantine"
-	} else { // all else, reject
-		dmarcPolicy = "reject"
-	}
-	d.AddDomainRecords(name, ip, spfAllow, dmarcPolicy, isFirst)
-}
-
-func (d *domain) AddDomainRecords(name, ipAddress, spfAllow, dmarcPolicy string, isFirst bool) {
-	if ipAddress != "" {
-		d.Add(newARecord(name, ipAddress))
-	}
-	if isFirst {
-		d.Add(newSpfRecord(name, spfAllow))
-		d.Add(newDmarcRecord(name, dmarcPolicy))
+	if ip != "" {
+		d.Add(newARecord(name, ip))
 	}
 }
 
-func isMx(name string, mailServers []mxRecord) bool {
-	for _, mx := range mailServers {
-		if mx.Name == name {
-			return true
-		}
+func (d *domain) AddSPFRecord(name, allow string) {
+	if !d.hasSPF[name] {
+		d.Add(newSpfRecord(name, allow))
+		d.hasSPF[name] = true
 	}
-	return false
+}
+
+func (d *domain) AddDMARCRecord(name, policy string) {
+	if !d.hasDMARC[name] {
+		d.Add(newDmarcRecord(name, policy))
+		d.hasDMARC[name] = true
+	}
 }
 
 func getIP(ipAddress, dynamicFqdn string) string {

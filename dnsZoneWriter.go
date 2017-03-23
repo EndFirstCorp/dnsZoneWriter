@@ -16,21 +16,22 @@ import (
 )
 
 type dnsZoneWriter struct {
-	DbServer          string
-	DbPort            string
-	DbUser            string
-	DbDatabase        string
-	DbPassword        string
-	NsdDir            string
-	ZoneFileDirectory string
-	ZonePassword      string
-	DKIMKeysPath      string
-	TLSPublicKeyPath  string
-	DNSMasterIP       string
-	DNSSlaveIPs       string
-	IsMaster          bool
-	DNSSecKeyDir      string
-	SigningAlgorithm  string
+	DbServer                  string
+	DbPort                    string
+	DbUser                    string
+	DbDatabase                string
+	DbPassword                string
+	NsdDir                    string
+	ZoneFileDirectory         string
+	ZonePassword              string
+	DKIMKeysPath              string
+	TLSPublicKeyPath          string
+	PostfixVirtualDomainsPath string
+	DNSMasterIP               string
+	DNSSlaveIPs               string
+	IsMaster                  bool
+	DNSSecKeyDir              string
+	SigningAlgorithm          string
 }
 
 func main() {
@@ -93,6 +94,7 @@ func (w *dnsZoneWriter) GetZones(db dnsBackend) ([]domain, error) {
 	if err != nil {
 		return nil, errors.New("Unable to retrieve domains from database " + err.Error())
 	}
+	domains = w.IncludePostfixVirtualDomains(domains)
 
 	for i := range domains {
 		if err := domains[i].BuildDNSRecords(path.Join(w.DKIMKeysPath, domains[i].Name, "mail.txt"), w.TLSPublicKeyPath); err != nil {
@@ -101,6 +103,29 @@ func (w *dnsZoneWriter) GetZones(db dnsBackend) ([]domain, error) {
 	}
 
 	return domains, nil
+}
+
+func (w *dnsZoneWriter) IncludePostfixVirtualDomains(domains []domain) []domain {
+	dMap := make(map[string]int)
+	for i := range domains {
+		dMap[domains[i].Name] = i
+	}
+	data, err := ioutil.ReadFile(w.PostfixVirtualDomainsPath)
+	if err != nil {
+		return domains
+	}
+	lines := strings.Split(string(data), "\n")
+	for _, name := range lines {
+		name = strings.TrimSpace(name)
+		if len(name) == 0 {
+			continue
+		}
+		_, ok := dMap[name]
+		if !ok {
+			domains = append(domains, domain{Name: name})
+		}
+	}
+	return domains
 }
 
 func (w *dnsZoneWriter) WriteAll(zones []domain) error {

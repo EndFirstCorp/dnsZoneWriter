@@ -78,19 +78,31 @@ func TestGetZones(t *testing.T) {
 		t.Error("expected error")
 	}
 
-	// get domains, but fail to build DNS records (no name server)
-	db = &mockBackend{domains: []domain{domain{Name: "example.com"}}}
-	_, err = w.GetZones(db)
-	if err == nil {
-		t.Error("expected error")
-	}
-
 	// success
 	domains := []domain{domain{Name: "example.com", NsRecords: []nsRecord{nsRecord{}}}}
 	db = &mockBackend{domains: domains}
 	actual, err := w.GetZones(db)
 	if err != nil || len(actual) != 1 || len(actual[0].DNSRecords) == 0 {
 		t.Error("expected success", err, actual, domains)
+	}
+
+	// success with merged domains
+	w = &dnsZoneWriter{PostfixVirtualDomainsPath: "testData/virtual-mailbox-domains.txt"}
+	domains = []domain{domain{Name: "example.com", NsRecords: []nsRecord{nsRecord{}}}}
+	db = &mockBackend{domains: domains}
+	actual, err = w.GetZones(db)
+	if err != nil || len(actual) != 2 || actual[0].Name != "example.com" || actual[1].Name != "test1.com" {
+		t.Error("expected success", err, actual)
+	}
+}
+
+func TestIncludePostfixVirtualDomains(t *testing.T) {
+	domains := []domain{domain{Name: "example.com", NsRecords: []nsRecord{nsRecord{}}}}
+	w := &dnsZoneWriter{PostfixVirtualDomainsPath: "testData/virtual-mailbox-domains.txt"}
+	domains = w.IncludePostfixVirtualDomains(domains)
+	if len(domains) != 2 || domains[0].Name != "example.com" || len(domains[0].NsRecords) != 1 ||
+		domains[1].Name != "test1.com" {
+		t.Error("expected successful merge", domains[0], "\n", domains[1])
 	}
 }
 

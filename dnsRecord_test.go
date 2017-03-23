@@ -20,14 +20,14 @@ func TestNewARecord(t *testing.T) {
 }
 
 func TestNewMxRecord(t *testing.T) {
-	actual := newMxRecord("domain", "mail", 1)
+	actual := newMxRecord("domain", "", "mail", 1)
 	if actual.Name != "domain." || actual.RecordType != "MX" || actual.Data != "1 mail.domain." {
 		t.Fatal("expected MX record", actual)
 	}
 }
 
 func TestNewMxRecordAbsolute(t *testing.T) {
-	actual := newMxRecord("domain.com", "absolute.example.com.", 1)
+	actual := newMxRecord("domain.com", "", "absolute.example.com.", 1)
 	if actual.Name != "domain.com." || actual.RecordType != "MX" || actual.Data != "1 absolute.example.com." {
 		t.Fatal("expected absolute MX record", actual)
 	}
@@ -70,7 +70,7 @@ func TestNewSpfRecord(t *testing.T) {
 
 func TestNewDmarcRecord(t *testing.T) {
 	actual := newDmarcRecord("name", "policy")
-	if actual.Name != "_dmarc.name" || actual.RecordType != "TXT" || actual.Data != "\"v=DMARC1; p=policy\"" {
+	if actual.Name != "_dmarc.name" || actual.RecordType != "TXT" || actual.Data != "\"v=DMARC1; p=policy; rua=mailto:dmarc-report@endfirst.com\"" {
 		t.Fatal("expected DMARC record", actual)
 	}
 }

@@ -17,10 +17,15 @@ func TestBuildDnsRecords(t *testing.T) {
 		ARecords:     []aRecord{aRecord{Name: "", IPAddress: ipAddress}, aRecord{Name: "server", IPAddress: ipAddress}},
 		CNameRecords: []cnameRecord{cnameRecord{Name: "cname", CanonicalName: "cname.example.com"}}}
 	d.BuildDNSRecords("mail.txt", "ssl_certificate.pem")
-	if len(d.DNSRecords) != 14 || d.DNSRecords[0].RecordType != "SOA" || d.DNSRecords[1].RecordType != "TLSA" || d.DNSRecords[2].RecordType != "TLSA" || d.DNSRecords[3].Name != "mail._domainkey" || d.DNSRecords[4].RecordType != "NS" || d.DNSRecords[5].RecordType != "MX" ||
-		d.DNSRecords[6].Name != "mail._domainkey.mail1" || d.DNSRecords[7].RecordType != "A" || d.DNSRecords[8].Data != "\"v=spf1 mx -all\"" || d.DNSRecords[9].Data != "\"v=DMARC1; p=quarantine\"" ||
-		d.DNSRecords[10].RecordType != "A" || d.DNSRecords[11].Data != "\"v=spf1  -all\"" || d.DNSRecords[12].Data != "\"v=DMARC1; p=reject\"" || d.DNSRecords[13].Data != "cname.example.com" {
-		t.Fatalf("expected 14 dns records with specific values: %s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n", d.DNSRecords[0], d.DNSRecords[1], d.DNSRecords[2], d.DNSRecords[3], d.DNSRecords[4], d.DNSRecords[5], d.DNSRecords[6], d.DNSRecords[7], d.DNSRecords[8], d.DNSRecords[9], d.DNSRecords[10], d.DNSRecords[11], d.DNSRecords[12], d.DNSRecords[13])
+	if len(d.DNSRecords) != 13 || d.DNSRecords[0].RecordType != "SOA" || d.DNSRecords[1].RecordType != "TLSA" || d.DNSRecords[2].RecordType != "TLSA" ||
+		d.DNSRecords[3].Name != "mail._domainkey" || d.DNSRecords[4].RecordType != "NS" || d.DNSRecords[5].RecordType != "MX" ||
+		d.DNSRecords[6].Data != "\"v=spf1 include:_spf.endfirst.com -all\"" || d.DNSRecords[7].Name != "_dmarc.example.com." ||
+		d.DNSRecords[8].RecordType != "A" || d.DNSRecords[9].RecordType != "A" ||
+		d.DNSRecords[10].Name != "_dmarc.server" || d.DNSRecords[11].Data != "\"v=spf1  -all\"" || d.DNSRecords[12].RecordType != "CNAME" {
+		for _, record := range d.DNSRecords {
+			t.Log(record.RecordType, record.Name, record.Data)
+		}
+		t.Fatalf("expected 13 dns records with specific values. Actually have %d", len(d.DNSRecords))
 	}
 }
 
@@ -30,24 +35,6 @@ func TestAdd(t *testing.T) {
 	d.Add(record)
 	if d.DNSRecords[0] != *record {
 		t.Fatal("expected to have added Dns record", d.DNSRecords[0])
-	}
-}
-
-func TestAddDomain(t *testing.T) {
-	d := &domain{}
-	d.AddDomain("name", "123.45.67.89", "", true)
-	if len(d.DNSRecords) != 3 || d.DNSRecords[0].RecordType != "A" ||
-		d.DNSRecords[1].Data != "\"v=spf1  -all\"" || d.DNSRecords[2].Data != "\"v=DMARC1; p=reject\"" {
-		t.Fatal("expected to have added A record, SPF record and DMARC record", d.DNSRecords)
-	}
-}
-
-func TestAddDomainDynamicMx(t *testing.T) {
-	d := &domain{MxRecords: []mxRecord{mxRecord{1, "name", 5}}}
-	d.AddDomain("name", "", "google-public-dns-a.google.com", true)
-	if len(d.DNSRecords) != 3 || d.DNSRecords[0].RecordType != "A" ||
-		d.DNSRecords[1].Data != "\"v=spf1 ip4:8.8.8.8 -all\"" || d.DNSRecords[2].Data != "\"v=DMARC1; p=quarantine\"" {
-		t.Fatal("expected to have added A record, SPF record and DMARC record", d.DNSRecords)
 	}
 }
 
@@ -120,9 +107,11 @@ _25._tcp		IN	TLSA	3 0 1 TLSA_KEY_FILE_NOT_FOUND_AT_bogus
 _443._tcp		IN	TLSA	3 0 1 TLSA_KEY_FILE_NOT_FOUND_AT_bogus
 mail._domainkey		IN	TXT	DKIM_KEY_NOT_FOUND_AT_bogus
 example.com.		IN	NS	ns1.example.com.
+example.com.		IN	MX	10 mail1.endfirst.com.
+example.com.		IN	MX	20 mail2.endfirst.com.
+example.com.		IN	TXT	"v=spf1 include:_spf.endfirst.com -all"
+_dmarc.example.com.		IN	TXT	"v=DMARC1; p=quarantine; rua=mailto:dmarc-report@endfirst.com"
 example.com.		IN	A	123.45.67.89
-example.com.		IN	TXT	"v=spf1 mx -all"
-_dmarc.example.com.		IN	TXT	"v=DMARC1; p=quarantine"
 `
 	actual := d.String("1234567")
 	if expected != actual {

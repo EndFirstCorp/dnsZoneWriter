@@ -23,11 +23,16 @@ func newDNSRecord(name string, recordType string, data string) *dnsRecord {
 	return &dnsRecord{name, "", "IN", recordType, data}
 }
 
-func newMxRecord(domain string, mxName string, priority int16) *dnsRecord {
-	if strings.HasSuffix(mxName, ".") {
-		return newDNSRecord(domain+".", "MX", fmt.Sprintf("%d %s", priority, mxName))
+func newMxRecord(domain string, name string, value string, priority int16) *dnsRecord {
+	if name == "" {
+		name = domain + "."
+	} else {
+		name = name + "." + domain + "."
 	}
-	return newDNSRecord(domain+".", "MX", fmt.Sprintf("%d %s.%s.", priority, mxName, domain))
+	if strings.HasSuffix(value, ".") {
+		return newDNSRecord(name, "MX", fmt.Sprintf("%d %s", priority, value))
+	}
+	return newDNSRecord(name, "MX", fmt.Sprintf("%d %s.%s.", priority, value, domain))
 }
 
 func newSoaRecord(domain string, primaryNameServer string, hostmaster string, refresh time.Duration, retry time.Duration, expire time.Duration, negativeTTL time.Duration) *dnsRecord {
@@ -45,6 +50,10 @@ func newDkimRecord(name string, dkimValue string) *dnsRecord {
 }
 
 func newNsRecord(domain string, nsName string) *dnsRecord {
+	// could be pointing to another domain, so don't add domain
+	if strings.HasSuffix(nsName, ".") {
+		return newDNSRecord(domain+".", "NS", nsName)
+	}
 	return newDNSRecord(domain+".", "NS", nsName+"."+domain+".")
 }
 
@@ -68,7 +77,7 @@ func newTlsaRecord(port int, tlsaKey string) *dnsRecord {
 }
 
 func newSpfRecord(name string, allow string) *dnsRecord {
-	return newDNSRecord(name, "TXT", "\"v=spf1 "+allow+" -all\"")
+	return newDNSRecord(name, "TXT", fmt.Sprintf("\"v=spf1 %s -all\"", allow))
 }
 
 func newDmarcRecord(name string, policy string) *dnsRecord {
@@ -76,7 +85,7 @@ func newDmarcRecord(name string, policy string) *dnsRecord {
 	if name != "" {
 		recordName += "." + name
 	}
-	return newDNSRecord(recordName, "TXT", "\"v=DMARC1; p="+policy+"\"")
+	return newDNSRecord(recordName, "TXT", "\"v=DMARC1; p="+policy+"; rua=mailto:dmarc-report@endfirst.com\"")
 }
 
 func newCNameRecord(name, canonicalName string) *dnsRecord {

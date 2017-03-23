@@ -49,11 +49,20 @@ func TestCreateSchema(t *testing.T) {
 }
 
 func TestGetDomains(t *testing.T) {
-	aRecords := []aRecord{aRecord{Name: "arecord", DomainID: 1}, aRecord{Name: "arecord2", DomainID: 2}}
-	mxRecords := []mxRecord{mxRecord{Name: "mxrecord", DomainID: 1}, mxRecord{Name: "mxrecord2", DomainID: 2}}
-	nsRecords := []nsRecord{nsRecord{Name: "nsrecord", DomainID: 1}, nsRecord{Name: "nsrecord2", DomainID: 2}}
-	cnameRecords := []cnameRecord{cnameRecord{Name: "cname1", DomainID: 1}, cnameRecord{Name: "cname2", DomainID: 2}}
-	domainRecords := []domain{domain{Name: "domain", ID: 1}, domain{Name: "domain2", ID: 2}}
+	domainRecords := []domainResult{
+		domainResult{Name: "domain", ID: 1,
+			A:     `[{"domainid":1,"name":"arecord","ipaddress":"","dynamicfqdn":""}]`,
+			MX:    `[{"domainid":1,"name":"mxrecord","value":"","priority":0}]`,
+			NS:    `[{"domainid":1,"name":"nsrecord","value":"","sortorder":0}]`,
+			CNAME: `[{"domainid":1,"name":"cname1","canonicalname":""}]`,
+		},
+		domainResult{Name: "domain2", ID: 1,
+			A:     `[{"domainid":2,"name":"arecord2","ipaddress":"","dynamicfqdn":""}]`,
+			MX:    `[{"domainid":2,"name":"mxrecord2","value":"","priority":0}]`,
+			NS:    `[{"domainid":2,"name":"nsrecord2","value":"","sortorder":0}]`,
+			CNAME: `[{"domainid":2,"name":"cname2","canonicalname":""}]`,
+		},
+	}
 	// fail on getARecords
 	d := db{Db: onedb.NewMock(nil, nil)}
 	_, err := d.GetDomains()
@@ -61,36 +70,8 @@ func TestGetDomains(t *testing.T) {
 		t.Error("expected error since there's no A Records in the Mock reader")
 	}
 
-	// fail on getMxRecords
-	d = db{Db: onedb.NewMock(nil, nil, aRecords)}
-	_, err = d.GetDomains()
-	if err == nil {
-		t.Error("expected error since there's no MX Records in the Mock reader")
-	}
-
-	// fail on getNsRecords
-	d = db{Db: onedb.NewMock(nil, nil, aRecords, mxRecords)}
-	_, err = d.GetDomains()
-	if err == nil {
-		t.Error("expected error since there's no NS Records in the Mock reader")
-	}
-
-	// fail on getCNameRecords
-	d = db{Db: onedb.NewMock(nil, nil, aRecords, mxRecords, nsRecords)}
-	_, err = d.GetDomains()
-	if err == nil {
-		t.Error("expected error since there's no CNames in the Mock reader")
-	}
-
-	// fail on get domains
-	d = db{Db: onedb.NewMock(nil, nil, aRecords, mxRecords, nsRecords, cnameRecords)}
-	_, err = d.GetDomains()
-	if err == nil {
-		t.Error("expected error since there's no domains in the Mock reader")
-	}
-
-	d = db{Db: onedb.NewMock(nil, nil, aRecords, mxRecords, nsRecords, cnameRecords, domainRecords)}
-	domains, _ := d.GetDomains()
+	d = db{Db: onedb.NewMock(nil, nil, domainRecords)}
+	domains, err := d.GetDomains()
 	if len(domains) != 2 || domains[0].Name != "domain" || domains[1].Name != "domain2" ||
 		len(domains[1].ARecords) != 1 || len(domains[0].ARecords) != 1 || domains[0].ARecords[0].Name != "arecord" || domains[1].ARecords[0].Name != "arecord2" ||
 		len(domains[1].MxRecords) != 1 || len(domains[0].MxRecords) != 1 || domains[0].MxRecords[0].Name != "mxrecord" || domains[1].MxRecords[0].Name != "mxrecord2" ||
@@ -102,32 +83,5 @@ func TestGetDomains(t *testing.T) {
 	_, err = d.GetDomains()
 	if err == nil {
 		t.Error("expected error since there is no data left in the reader")
-	}
-}
-
-func TestGetARecords(t *testing.T) {
-	reader := onedb.NewMock(nil, nil, []aRecord{aRecord{Name: "arecord"}})
-	db := db{Db: reader}
-	aRecords, err := db.getARecords()
-	if err != nil || len(aRecords) != 1 || aRecords[0].Name != "arecord" {
-		t.Error("expected successful query", aRecords)
-	}
-}
-
-func TestGetMxRecords(t *testing.T) {
-	reader := onedb.NewMock(nil, nil, []mxRecord{mxRecord{Name: "mxrecord"}})
-	db := db{Db: reader}
-	mxRecords, err := db.getMxRecords()
-	if err != nil || len(mxRecords) != 1 || mxRecords[0].Name != "mxrecord" {
-		t.Error("expected successful query", mxRecords)
-	}
-}
-
-func TestGetNsRecords(t *testing.T) {
-	reader := onedb.NewMock(nil, nil, []nsRecord{nsRecord{Name: "nsrecord"}})
-	db := db{Db: reader}
-	nsRecords, err := db.getNsRecords()
-	if err != nil || len(nsRecords) != 1 || nsRecords[0].Name != "nsrecord" {
-		t.Error("expected successful query", nsRecords)
 	}
 }

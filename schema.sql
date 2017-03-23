@@ -17,22 +17,6 @@ CONSTRAINT PK_ARecordss PRIMARY KEY (DomainId,Name,IpAddress,DynamicFQDN),
 CONSTRAINT FK_ARecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
 );
 
-CREATE TABLE MxRecords (
-DomainId                  SMALLINT        NOT NULL,
-Name                      VARCHAR(50)     NOT NULL,
-Priority                  SMALLINT        NOT NULL,
-CONSTRAINT PK_MxRecords PRIMARY KEY (DomainId,Name),
-CONSTRAINT FK_MxRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
-);
-
-CREATE TABLE NsRecords (
-DomainId                  SMALLINT        NOT NULL,
-Name                      VARCHAR(50)     NOT NULL,
-SortOrder                 SMALLINT        NOT NULL,
-CONSTRAINT PK_NsRecords PRIMARY KEY (DomainId,Name),
-CONSTRAINT FK_NsRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
-);
-
 CREATE TABLE CNameRecords (
 DomainId                  SMALLINT        NOT NULL,
 Name                      VARCHAR(50)     NOT NULL,
@@ -41,10 +25,64 @@ CONSTRAINT PK_CNameRecords PRIMARY KEY (DomainId,Name),
 CONSTRAINT FK_CNameRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
 );
 
+CREATE TABLE DKIMRecords (
+DomainId                  SMALLINT        NOT NULL,
+Name                      VARCHAR(50)     NOT NULL,
+Value                     VARCHAR(255)    NOT NULL,
+CONSTRAINT PK_DKIMRecords PRIMARY KEY (DomainId,Name),
+CONSTRAINT FK_DKIMRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
+);
+
+CREATE TABLE DMARCRecords (
+DomainId                  SMALLINT        NOT NULL,
+Name                      VARCHAR(50)     NOT NULL,
+Value                     VARCHAR(255)    NOT NULL,
+CONSTRAINT PK_DMARCRecords PRIMARY KEY (DomainId,Name),
+CONSTRAINT FK_DMARCRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
+);
+
+CREATE TABLE MxRecords (
+DomainId                  SMALLINT        NOT NULL,
+Name                      VARCHAR(50)     NOT NULL,
+Value                     VARCHAR(255)    NOT NULL,
+Priority                  SMALLINT        NOT NULL,
+CONSTRAINT PK_MxRecords PRIMARY KEY (DomainId,Name,Value),
+CONSTRAINT FK_MxRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
+);
+
+CREATE TABLE NsRecords (
+DomainId                  SMALLINT        NOT NULL,
+Name                      VARCHAR(50)     NOT NULL,
+Value                     VARCHAR(255)    NOT NULL,
+SortOrder                 SMALLINT        NOT NULL,
+CONSTRAINT PK_NsRecords PRIMARY KEY (DomainId,Name,Value),
+CONSTRAINT FK_NsRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
+);
+
 CREATE TABLE SPFRecords (
 DomainId                  SMALLINT        NOT NULL,
 Name                      VARCHAR(50)     NOT NULL,
-AllowFilter               VARCHAR(50)     NOT NULL,
+Value                     VARCHAR(255)    NOT NULL,
 CONSTRAINT PK_SPFRecords PRIMARY KEY (DomainId,Name),
 CONSTRAINT FK_SPFRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
+);
+
+CREATE TABLE SRVRecords (
+DomainId                  SMALLINT        NOT NULL,
+Service                   VARCHAR(20)     NOT NULL,
+Protocol                  VARCHAR(10)     NOT NULL,
+Priority                  SMALLINT        NOT NULL,
+Weight                    SMALLINT        NOT NULL,
+Port                      SMALLINT        NOT NULL,
+Target                    VARCHAR(50)     NOT NULL,
+CONSTRAINT PK_SRVRecords PRIMARY KEY (DomainId,Service,Protocol,Port,Target),
+CONSTRAINT FK_SRVRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
+);
+
+CREATE TABLE TXTRecords (
+DomainId                  SMALLINT        NOT NULL,
+Name                      VARCHAR(50)     NOT NULL,
+Value                     VARCHAR(50)     NOT NULL,
+CONSTRAINT PK_TXTRecords PRIMARY KEY (DomainId,Name),
+CONSTRAINT FK_TXTRecords_Domains FOREIGN KEY (DomainId) REFERENCES Domains(Id)
 );
