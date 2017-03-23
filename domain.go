@@ -65,6 +65,9 @@ func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath stri
 	for _, spf := range d.SPFRecords {
 		d.AddSPFRecord(spf.Name, spf.Value)
 	}
+	for _, mailServer := range d.MxRecords {
+		d.AddSPFRecord(mailServer.Name, "a") // add default policy for mail servers if not explicitly specified
+	}
 	for _, dkim := range d.DKIMRecords {
 		d.Add(newDkimRecord(dkim.Name, dkimValue))
 	}
