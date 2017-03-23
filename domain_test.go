@@ -96,7 +96,7 @@ func TestGetDkimValueNotFound(t *testing.T) {
 }
 
 func TestDomainToString(t *testing.T) {
-	d := &domain{Name: "example.com", ARecords: []aRecord{aRecord{Name: "", IPAddress: "123.45.67.89"}}, NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}
+	d := &domain{Name: "example.com", ARecords: []aRecord{aRecord{Name: "", IPAddress: "123.45.67.89"}}, NsRecords: []nsRecord{nsRecord{Name: "", Value: "ns1"}}}
 	d.BuildDNSRecords("bogus", "bogus")
 	expected := `
 $ORIGIN example.com.

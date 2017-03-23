@@ -49,12 +49,17 @@ func newDkimRecord(name string, dkimValue string) *dnsRecord {
 	return newDNSRecord(recordName, "TXT", dkimValue)
 }
 
-func newNsRecord(domain string, nsName string) *dnsRecord {
-	// could be pointing to another domain, so don't add domain
-	if strings.HasSuffix(nsName, ".") {
-		return newDNSRecord(domain+".", "NS", nsName)
+func newNsRecord(domain, name, value string) *dnsRecord {
+	if name == "" {
+		name = domain + "."
+	} else {
+		name = name + "." + domain + "."
 	}
-	return newDNSRecord(domain+".", "NS", nsName+"."+domain+".")
+	// could be pointing to another domain, so don't add domain
+	if strings.HasSuffix(value, ".") {
+		return newDNSRecord(name, "NS", value)
+	}
+	return newDNSRecord(name, "NS", value+"."+domain+".")
 }
 
 /* while this is technically "working", there is no way to ensure that the output from the ssh-keyscan is not being returned from a MITM attacker.

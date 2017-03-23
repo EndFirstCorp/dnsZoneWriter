@@ -48,7 +48,7 @@ func TestNewDkimRecord(t *testing.T) {
 }
 
 func TestNewNsRecord(t *testing.T) {
-	actual := newNsRecord("domain", "ns1")
+	actual := newNsRecord("domain", "", "ns1")
 	if actual.Name != "domain." || actual.RecordType != "NS" || actual.Data != "ns1.domain." {
 		t.Fatal("expected NS record", actual)
 	}

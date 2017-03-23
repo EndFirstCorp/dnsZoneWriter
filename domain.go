@@ -51,13 +51,13 @@ func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath stri
 	tlsaKey := getTlsaKey(sslCertificatePath)
 
 	d.getDefaults()
-	d.Add(newSoaRecord(d.Name, d.NsRecords[0].Name, hostmaster, refresh, retry, expire, negativeTTL))
+	d.Add(newSoaRecord(d.Name, d.NsRecords[0].Value, hostmaster, refresh, retry, expire, negativeTTL))
 	d.Add(newTlsaRecord(25, tlsaKey))
 	d.Add(newTlsaRecord(443, tlsaKey))
 	d.Add(newDkimRecord("", dkimValue))
 
 	for _, nameServer := range d.NsRecords {
-		d.Add(newNsRecord(d.Name, nameServer.Name))
+		d.Add(newNsRecord(d.Name, nameServer.Name, nameServer.Value))
 	}
 	for _, mailServer := range d.MxRecords {
 		d.Add(newMxRecord(d.Name, mailServer.Name, mailServer.Value, mailServer.Priority))
@@ -107,7 +107,7 @@ func getDefaultMx() []mxRecord {
 }
 
 func getDefaultNs() []nsRecord {
-	return []nsRecord{nsRecord{Name: "ns1.endfirst.com.", SortOrder: 1}, nsRecord{Name: "ns2.endfirst.com.", SortOrder: 1}}
+	return []nsRecord{nsRecord{Name: "", Value: "ns1.endfirst.com.", SortOrder: 1}, nsRecord{Name: "", Value: "ns2.endfirst.com.", SortOrder: 1}}
 }
 
 func getDefaultSPF(domain string) []spfRecord {
