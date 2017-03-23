@@ -79,7 +79,7 @@ func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath stri
 		}
 		d.AddARecord(name, server.IPAddress, server.DynamicFQDN)
 		d.AddDMARCRecord(name, "reject") // reject if not specified earlier
-		d.AddSPFRecord(name, "")         // reject all mail
+		d.AddSPFRecord(server.Name, "")  // reject all mail
 	}
 	for _, cname := range d.CNameRecords {
 		d.Add(newCNameRecord(cname.Name, cname.CanonicalName))
@@ -95,7 +95,7 @@ func (d *domain) getDefaults() {
 		d.MxRecords = getDefaultMx()
 	}
 	if len(d.SPFRecords) == 0 {
-		d.SPFRecords = getDefaultSPF(d.Name)
+		d.SPFRecords = getDefaultSPF()
 	}
 	if len(d.DMARCRecords) == 0 {
 		d.DMARCRecords = getDefaultDMARC(d.Name)
@@ -110,8 +110,8 @@ func getDefaultNs() []nsRecord {
 	return []nsRecord{nsRecord{Name: "", Value: "ns1.endfirst.com.", SortOrder: 1}, nsRecord{Name: "", Value: "ns2.endfirst.com.", SortOrder: 1}}
 }
 
-func getDefaultSPF(domain string) []spfRecord {
-	return []spfRecord{spfRecord{Name: domain + ".", Value: "include:_spf.endfirst.com"}}
+func getDefaultSPF() []spfRecord {
+	return []spfRecord{spfRecord{Name: "", Value: "include:_spf.endfirst.com"}}
 }
 
 func getDefaultDMARC(domain string) []dmarcRecord {
@@ -131,7 +131,7 @@ func (d *domain) AddARecord(name, ipAddress, dynamicFqdn string) {
 
 func (d *domain) AddSPFRecord(name, allow string) {
 	if !d.hasSPF[name] {
-		d.Add(newSpfRecord(name, allow))
+		d.Add(newSpfRecord(d.Name, name, allow))
 		d.hasSPF[name] = true
 	}
 }

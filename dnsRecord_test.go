@@ -62,8 +62,8 @@ func TestNewTlsaRecord(t *testing.T) {
 }
 
 func TestNewSpfRecord(t *testing.T) {
-	actual := newSpfRecord("name", "allow")
-	if actual.Name != "name" || actual.RecordType != "TXT" || actual.Data != "\"v=spf1 allow -all\"" {
+	actual := newSpfRecord("domain", "name", "allow")
+	if actual.Name != "name.domain." || actual.RecordType != "TXT" || actual.Data != "\"v=spf1 allow -all\"" {
 		t.Fatal("expected SPF record", actual)
 	}
 }

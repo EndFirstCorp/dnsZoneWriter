@@ -81,7 +81,12 @@ func newTlsaRecord(port int, tlsaKey string) *dnsRecord {
 	return newDNSRecord(fmt.Sprintf("_%d._tcp", port), "TLSA", "3 0 1 "+tlsaKey)
 }
 
-func newSpfRecord(name string, allow string) *dnsRecord {
+func newSpfRecord(domain, name string, allow string) *dnsRecord {
+	if name == "" {
+		name = domain + "."
+	} else {
+		name = name + "." + domain + "."
+	}
 	return newDNSRecord(name, "TXT", fmt.Sprintf("\"v=spf1 %s -all\"", allow))
 }
 

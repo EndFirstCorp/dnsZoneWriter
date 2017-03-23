@@ -45,7 +45,7 @@ func TestUpdateZoneDate(t *testing.T) {
 		t.Error("expected error from db fetch")
 	}
 
-	db = &mockBackend{domains: []domain{domain{Name: "example1.com", NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}}}
+	db = &mockBackend{domains: []domain{domain{Name: "example1.com", NsRecords: []nsRecord{nsRecord{Value: "ns1"}}}}}
 	w = &dnsZoneWriter{ZoneFileDirectory: "testData", NsdDir: "testData", DKIMKeysPath: "testData"}
 	err = w.UpdateZoneData(db)
 	if err != nil {
@@ -55,7 +55,7 @@ func TestUpdateZoneDate(t *testing.T) {
 		t.Error("expected example1.com.txt to be created")
 	}
 
-	db = &mockBackend{domains: []domain{domain{Name: "&?\\/#@*^%bogus", NsRecords: []nsRecord{nsRecord{Name: "ns1"}}}}}
+	db = &mockBackend{domains: []domain{domain{Name: "&?\\/#@*^%bogus", NsRecords: []nsRecord{nsRecord{Value: "ns1"}}}}}
 	err = w.UpdateZoneData(db)
 	if err == nil {
 		t.Error("expected failure with bogus domain name")
