@@ -42,9 +42,9 @@ func newSoaRecord(domain string, primaryNameServer string, hostmaster string, re
 }
 
 func newDkimRecord(name string, dkimValue string) *dnsRecord {
-	recordName := "mail._domainkey"
-	if name != "" {
-		recordName += "." + name
+	recordName := name + "._domainkey"
+	if name == "" {
+		recordName = "mail._domainkey"
 	}
 	return newDNSRecord(recordName, "TXT", dkimValue)
 }
