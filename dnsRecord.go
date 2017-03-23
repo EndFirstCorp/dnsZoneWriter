@@ -26,7 +26,7 @@ func newDNSRecord(name string, recordType string, data string) *dnsRecord {
 func newMxRecord(domain string, name string, value string, priority int16) *dnsRecord {
 	if name == "" {
 		name = domain + "."
-	} else {
+	} else if !strings.HasSuffix(name, ".") {
 		name = name + "." + domain + "."
 	}
 	if strings.HasSuffix(value, ".") {
@@ -52,7 +52,7 @@ func newDkimRecord(name string, dkimValue string) *dnsRecord {
 func newNsRecord(domain, name, value string) *dnsRecord {
 	if name == "" {
 		name = domain + "."
-	} else {
+	} else if !strings.HasSuffix(name, ".") {
 		name = name + "." + domain + "."
 	}
 	// could be pointing to another domain, so don't add domain
@@ -84,7 +84,7 @@ func newTlsaRecord(port int, tlsaKey string) *dnsRecord {
 func newSpfRecord(domain, name string, allow string) *dnsRecord {
 	if name == "" {
 		name = domain + "."
-	} else {
+	} else if !strings.HasSuffix(name, ".") {
 		name = name + "." + domain + "."
 	}
 	return newDNSRecord(name, "TXT", fmt.Sprintf("\"v=spf1 %s -all\"", allow))
