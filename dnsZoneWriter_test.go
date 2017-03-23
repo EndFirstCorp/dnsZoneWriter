@@ -5,6 +5,7 @@ import (
 	"github.com/robarchibald/command"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -37,7 +38,7 @@ func TestNewDnsZoneWriter(t *testing.T) {
 }
 
 func TestUpdateZoneDate(t *testing.T) {
-	os.Remove("testData/example1.com.txt")
+	clean("testData/example1.com.txt*")
 	db := &mockBackend{getDomainsErr: errors.New("fail")}
 	w := &dnsZoneWriter{}
 	err := w.UpdateZoneData(db)
@@ -108,7 +109,7 @@ func TestIncludePostfixVirtualDomains(t *testing.T) {
 
 func TestWriteAll(t *testing.T) {
 	// isMaster=true so restart
-	os.Remove("testData/example2.com.txt")
+	clean("testData/example2.com.txt*")
 	zones := []domain{domain{Name: "example2.com"}}
 	w := &dnsZoneWriter{IsMaster: true, ZoneFileDirectory: "testData", NsdDir: "testData"}
 	err := w.WriteAll(zones)
@@ -117,7 +118,7 @@ func TestWriteAll(t *testing.T) {
 	}
 
 	// success - not master
-	os.Remove("testData/example3.com.txt")
+	clean("testData/example3.com.txt*")
 	zones = []domain{domain{Name: "example3.com"}}
 	w = &dnsZoneWriter{ZoneFileDirectory: "testData", NsdDir: "testData"}
 	err = w.WriteAll(zones)
@@ -136,7 +137,7 @@ func TestWriteAll(t *testing.T) {
 	}
 
 	// bad zone directory
-	os.Remove("testData/example4.com.txt")
+	clean("testData/example4.com.txt*")
 	zones = []domain{domain{Name: "example4.com"}}
 	w = &dnsZoneWriter{NsdDir: "&?\\/#@*^%bogus", ZoneFileDirectory: "testData"}
 	err = w.WriteAll(zones)
@@ -205,6 +206,16 @@ func TestRenameKeyFiles(t *testing.T) {
 	err = renameKeyFiles("testData", "example2.com.ALG.KSK", "example2.com", "ALG", "KSK")
 	if err == nil {
 		t.Error("expected error due to example2.com.ALG.KSK.key being missing")
+	}
+}
+
+func clean(searchglob string) {
+	if _, err := os.Stat("testData"); os.IsNotExist(err) {
+		os.Mkdir("testData", 755)
+	}
+	matches, _ := filepath.Glob(searchglob)
+	for _, file := range matches {
+		os.Remove(file)
 	}
 }
 

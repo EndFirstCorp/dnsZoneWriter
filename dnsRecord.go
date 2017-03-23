@@ -46,6 +46,9 @@ func newDkimRecord(name string, dkimValue string) *dnsRecord {
 	if name == "" {
 		recordName = "mail._domainkey"
 	}
+	if !strings.HasPrefix(dkimValue, "\"") && !strings.HasPrefix(dkimValue, "(") {
+		dkimValue = "\"" + dkimValue + "\""
+	}
 	return newDNSRecord(recordName, "TXT", dkimValue)
 }
 

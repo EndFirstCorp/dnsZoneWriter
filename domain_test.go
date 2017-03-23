@@ -123,7 +123,7 @@ func TestWriteZone(t *testing.T) {
 	d := &domain{Name: "example.com", ARecords: []aRecord{aRecord{Name: "", IPAddress: "123.45.67.89"}}, NsRecords: []nsRecord{nsRecord{Value: "ns1"}}}
 	d.BuildDNSRecords("bogus", "bogus")
 
-	os.Remove("testData/example.com.txt")
+	clean("testData/example.com.txt*")
 	os.Remove("testData/example.com.txt.signed")
 
 	d.WriteZone("testData") // create file. not signed
