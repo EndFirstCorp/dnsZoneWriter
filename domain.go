@@ -71,7 +71,7 @@ func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath stri
 		}
 	}
 	for _, dkim := range d.DKIMRecords {
-		d.Add(newDkimRecord(dkim.Name, dkimValue))
+		d.Add(newDkimRecord(dkim.Name, dkim.Value))
 	}
 	for _, dmarc := range d.DMARCRecords {
 		d.AddDMARCRecord(dmarc.Name, dmarc.Value)
