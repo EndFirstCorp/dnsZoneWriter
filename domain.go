@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/robarchibald/command"
 	"io"
 	"io/ioutil"
 	"net"
@@ -14,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/robarchibald/command"
 )
 
 const defaultTTL time.Duration = 30 * time.Minute
@@ -43,7 +44,7 @@ type domain struct {
 	hasSPF       map[string]bool
 }
 
-func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath string) error {
+func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath string) {
 	d.hasDMARC = make(map[string]bool)
 	d.hasSPF = make(map[string]bool)
 	d.DefaultTTL = defaultTTL
@@ -89,7 +90,6 @@ func (d *domain) BuildDNSRecords(dkimKeyFilePath string, sslCertificatePath stri
 	for _, cname := range d.CNameRecords {
 		d.Add(newCNameRecord(cname.Name, cname.CanonicalName))
 	}
-	return nil
 }
 
 func (d *domain) getDefaults() {

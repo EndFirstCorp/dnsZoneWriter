@@ -88,10 +88,14 @@ func TestGetZones(t *testing.T) {
 		t.Error("expected success", err, actual, domains)
 	}
 
-	// success with merged domains
-	w = &dnsZoneWriter{PostfixVirtualDomainsPath: "testData/virtual-mailbox-domains.txt"}
+	// fail due to missing merged domain
+	w = &dnsZoneWriter{PostfixVirtualDomainsPath: "testData/bogus.txt"}
 	domains = []domain{domain{Name: "example.com", NsRecords: []nsRecord{nsRecord{}}}}
 	db = &mockBackend{domains: domains}
+	actual, err = w.GetZones(db)
+
+	// success with merged domains
+	w.PostfixVirtualDomainsPath = "testData/virtual-mailbox-domains.txt"
 	actual, err = w.GetZones(db)
 	if err != nil || len(actual) != 2 || actual[0].Name != "example.com" || actual[1].Name != "test1.com" {
 		t.Error("expected success", err, actual)
@@ -100,11 +104,17 @@ func TestGetZones(t *testing.T) {
 
 func TestIncludePostfixVirtualDomains(t *testing.T) {
 	domains := []domain{domain{Name: "example.com", NsRecords: []nsRecord{nsRecord{}}}}
-	w := &dnsZoneWriter{PostfixVirtualDomainsPath: "testData/virtual-mailbox-domains.txt"}
-	domains = w.IncludePostfixVirtualDomains(domains)
-	if len(domains) != 2 || domains[0].Name != "example.com" || len(domains[0].NsRecords) != 1 ||
+	w := &dnsZoneWriter{PostfixVirtualDomainsPath: "testData/bogus.txt"}
+	_, err := w.IncludePostfixVirtualDomains(domains)
+	if err == nil {
+		t.Error("expected error due to missing virtual domain file")
+	}
+
+	w = &dnsZoneWriter{PostfixVirtualDomainsPath: "testData/virtual-mailbox-domains.txt"}
+	domains, err = w.IncludePostfixVirtualDomains(domains)
+	if err != nil || len(domains) != 2 || domains[0].Name != "example.com" || len(domains[0].NsRecords) != 1 ||
 		domains[1].Name != "test1.com" {
-		t.Error("expected successful merge")
+		t.Error("expected successful merge", err)
 		for _, domain := range domains {
 			t.Error(domain)
 		}

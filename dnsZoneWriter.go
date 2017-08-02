@@ -6,13 +6,13 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/robarchibald/command"
 	"github.com/robarchibald/configReader"
-	"path"
-	"time"
 )
 
 type dnsZoneWriter struct {
@@ -94,25 +94,29 @@ func (w *dnsZoneWriter) GetZones(db dnsBackend) ([]domain, error) {
 	if err != nil {
 		return nil, errors.New("Unable to retrieve domains from database " + err.Error())
 	}
-	domains = w.IncludePostfixVirtualDomains(domains)
+	domains, err = w.IncludePostfixVirtualDomains(domains)
+	if err != nil {
+		return nil, errors.New("Unable to merge with virtual domains" + err.Error())
+	}
 
 	for i := range domains {
-		if err := domains[i].BuildDNSRecords(path.Join(w.DKIMKeysPath, domains[i].Name, "mail.txt"), w.TLSPublicKeyPath); err != nil {
-			return nil, err
-		}
+		domains[i].BuildDNSRecords(path.Join(w.DKIMKeysPath, domains[i].Name, "mail.txt"), w.TLSPublicKeyPath)
 	}
 
 	return domains, nil
 }
 
-func (w *dnsZoneWriter) IncludePostfixVirtualDomains(domains []domain) []domain {
+func (w *dnsZoneWriter) IncludePostfixVirtualDomains(domains []domain) ([]domain, error) {
 	dMap := make(map[string]int)
 	for i := range domains {
 		dMap[domains[i].Name] = i
 	}
+	if w.PostfixVirtualDomainsPath == "" {
+		return domains, nil
+	}
 	data, err := ioutil.ReadFile(w.PostfixVirtualDomainsPath)
 	if err != nil {
-		return domains
+		return nil, err
 	}
 	lines := strings.Split(string(data), "\n")
 	for _, name := range lines {
@@ -125,7 +129,7 @@ func (w *dnsZoneWriter) IncludePostfixVirtualDomains(domains []domain) []domain 
 			domains = append(domains, domain{Name: name})
 		}
 	}
-	return domains
+	return domains, nil
 }
 
 func (w *dnsZoneWriter) WriteAll(zones []domain) error {
