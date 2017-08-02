@@ -1,5 +1,7 @@
 
 # DNS Zone Writer
+[![Build Status](https://travis-ci.org/EndFirstCorp/dnsZoneWriter.svg?branch=master)](https://travis-ci.org/EndFirstCorp/dnsZoneWriter) [![Coverage Status](https://coveralls.io/repos/github/EndFirstCorp/dnsZoneWriter/badge.svg?branch=master)](https://coveralls.io/github/EndFirstCorp/dnsZoneWriter?branch=master)
+
 A NSD configuration writer written in Go that manages DNS configuration on both master and slave servers
 
 ## Getting Started
