@@ -130,6 +130,8 @@ func TestWriteZone(t *testing.T) {
 	d.WriteZone("testData") // create file. not signed
 	_, sn := getFileMatch("testData/example.com.txt", `SOA.*\((\d*)`)
 	if sn != time.Now().Format("2006010200") {
+		data, _ := ioutil.ReadFile("testData/example.com.txt")
+		t.Error(string(data))
 		t.Error("expected serial number expiration date to match current time", sn, time.Now().Format("2006010200"))
 	}
 
