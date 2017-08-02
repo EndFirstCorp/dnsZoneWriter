@@ -176,7 +176,7 @@ func (w *dnsZoneWriter) WriteZoneConfig(zones []domain, password string) error {
 			config += fmt.Sprintf("  allow-notify: %s sec_key\n  request-xfr: AXFR %s@53 sec_key", w.DNSMasterIP, w.DNSMasterIP)
 		}
 	}
-	return ioutil.WriteFile(filepath.Join(w.NsdDir, "zones.conf"), []byte(config), 640)
+	return ioutil.WriteFile(filepath.Join(w.NsdDir, "zones.conf"), []byte(config), 0640)
 }
 
 func reloadNsdServer() error {

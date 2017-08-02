@@ -175,5 +175,5 @@ func TestGetSerialNumberRevision(t *testing.T) {
 
 func writeSigned(domain string, expiration string) {
 	data := `example.com. 1800  IN  RRSIG SOA 8 2 1800 ` + expiration + ` 20160921090003 27633 example.com. xjGi+bWLxqHthk3cNVy7jA8XXFA5V7l8FWhGsTLdOC+h3vWazbyDzFdMEuS2OIghZHOcKDCQQ2rnlKFFZn8lHtktQhG0V4u9nji8s4BjqTlqe+DcRxeWTckSOazn2twVgOhGbD/eqlY4xDn8k5GZJd2KkaW+XeXQdRDERukv`
-	ioutil.WriteFile("testData/"+domain+".txt.signed", []byte(data), 644)
+	ioutil.WriteFile("testData/"+domain+".txt.signed", []byte(data), 0644)
 }

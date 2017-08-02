@@ -201,9 +201,9 @@ func TestKeysExist(t *testing.T) {
 }
 
 func TestRenameKeyFiles(t *testing.T) {
-	ioutil.WriteFile("testData/generated12345.ds", []byte{}, 644)
-	ioutil.WriteFile("testData/generated12345.key", []byte{}, 644)
-	ioutil.WriteFile("testData/generated12345.private", []byte{}, 644)
+	ioutil.WriteFile("testData/generated12345.ds", []byte{}, 0644)
+	ioutil.WriteFile("testData/generated12345.key", []byte{}, 0644)
+	ioutil.WriteFile("testData/generated12345.private", []byte{}, 0644)
 	os.Remove("testData/example4.com.ALG.KSK.ds")
 	os.Remove("testData/example4.com.ALG.KSK.key")
 	os.Remove("testData/example4.com.ALG.KSK.private")

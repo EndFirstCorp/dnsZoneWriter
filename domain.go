@@ -211,7 +211,7 @@ func (d *domain) WriteZone(folder string) (bool, error) {
 	if currentZone == "" || currentZone != d.String(currentSerialNumber) || expireDate.AddDate(0, 0, -3).Before(time.Now()) {
 		newSerialNumber = getSerialNumberRevision(currentSerialNumber, newSerialNumber)
 
-		err := ioutil.WriteFile(filename, []byte(d.String(newSerialNumber)), 644)
+		err := ioutil.WriteFile(filename, []byte(d.String(newSerialNumber)), 0644)
 		if err != nil {
 			return false, err
 		}
