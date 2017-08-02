@@ -132,9 +132,11 @@ func TestWriteZone(t *testing.T) {
 	if sn != time.Now().Format("2006010200") {
 		t.Error("data written, error", written, err)
 		files, _ := ioutil.ReadDir("testData")
-		t.Error("files in testData", files)
-		data, _ := ioutil.ReadFile("testData/example.com.txt")
-		t.Error(string(data))
+		for _, file := range files {
+			t.Error(file.Name())
+		}
+		data, err := ioutil.ReadFile("testData/example.com.txt")
+		t.Error(string(data), err)
 		t.Error("expected serial number expiration date to match current time", sn, time.Now().Format("2006010200"))
 	}
 
