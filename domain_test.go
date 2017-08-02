@@ -127,17 +127,10 @@ func TestWriteZone(t *testing.T) {
 	clean("testData/example.com.txt*")
 	os.Remove("testData/example.com.txt.signed")
 
-	written, err := d.WriteZone("testData") // create file. not signed
-	_, sn := getFileMatch("testData/example.com.txt", `SOA.*\((\d*)`)
+	d.WriteZone("testData") // create file. not signed
+	text, sn := getFileMatch("testData/example.com.txt", `SOA.*\((\d*)`)
 	if sn != time.Now().Format("2006010200") {
-		t.Error("data written, error", written, err)
-		files, _ := ioutil.ReadDir("testData")
-		for _, file := range files {
-			t.Error(file.Name())
-		}
-		data, err := ioutil.ReadFile("testData/example.com.txt")
-		t.Error(string(data), err)
-		t.Error("expected serial number expiration date to match current time", sn, time.Now().Format("2006010200"))
+		t.Error("expected serial number expiration date to match current time", sn, text, time.Now().Format("2006010200"))
 	}
 
 	writeSigned("example.com", time.Now().AddDate(0, 1, 0).Format("20060102000000"))
