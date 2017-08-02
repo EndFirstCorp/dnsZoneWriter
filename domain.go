@@ -217,7 +217,7 @@ func (d *domain) WriteZone(folder string) (bool, error) {
 		}
 		copyTo := fmt.Sprintf("%s_%s", filename, time.Now().Format("20060102-150405"))
 		err = copyFileContents(filename, copyTo)
-		fmt.Printf("Updated: %s. Saved as %s %v\n", filename, copyTo, err)
+		fmt.Println("Updated: ", filename, err)
 		cleanup(filename+"_*", 336) // 2 weeks
 		return true, nil
 	}
