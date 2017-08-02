@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/robarchibald/command"
 	"io/ioutil"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/robarchibald/command"
 )
 
 func TestBuildDnsRecords(t *testing.T) {
@@ -105,7 +106,7 @@ $TTL 1800
 example.com.		IN	SOA	ns1.example.com. hostmaster.example.com. (1234567 7200 1800 1209600 1800)
 _25._tcp		IN	TLSA	3 0 1 TLSA_KEY_FILE_NOT_FOUND_AT_bogus
 _443._tcp		IN	TLSA	3 0 1 TLSA_KEY_FILE_NOT_FOUND_AT_bogus
-mail._domainkey		IN	TXT	DKIM_KEY_NOT_FOUND_AT_bogus
+mail._domainkey		IN	TXT	"DKIM_KEY_NOT_FOUND_AT_bogus"
 example.com.		IN	NS	ns1.example.com.
 example.com.		IN	MX	10 mail1.endfirst.com.
 example.com.		IN	MX	20 mail2.endfirst.com.

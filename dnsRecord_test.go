@@ -42,8 +42,8 @@ func TestNewSoaRecord(t *testing.T) {
 
 func TestNewDkimRecord(t *testing.T) {
 	actual := newDkimRecord("domain", "dkimValue")
-	if actual.Name != "mail._domainkey.domain" || actual.RecordType != "TXT" || actual.Data != "dkimValue" {
-		t.Fatal("expected SOA record", actual)
+	if actual.Name != "domain._domainkey" || actual.RecordType != "TXT" || actual.Data != "\"dkimValue\"" {
+		t.Fatal("expected DKIM record", actual.Name, actual.RecordType, actual.Data)
 	}
 }
 
