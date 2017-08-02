@@ -2,12 +2,13 @@ package main
 
 import (
 	"errors"
-	"github.com/robarchibald/command"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/robarchibald/command"
 )
 
 func TestNewDnsZoneWriter(t *testing.T) {
@@ -103,7 +104,10 @@ func TestIncludePostfixVirtualDomains(t *testing.T) {
 	domains = w.IncludePostfixVirtualDomains(domains)
 	if len(domains) != 2 || domains[0].Name != "example.com" || len(domains[0].NsRecords) != 1 ||
 		domains[1].Name != "test1.com" {
-		t.Error("expected successful merge", domains[0], "\n", domains[1])
+		t.Error("expected successful merge")
+		for _, domain := range domains {
+			t.Error(domain)
+		}
 	}
 }
 
